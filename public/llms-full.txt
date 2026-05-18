@@ -2,13 +2,13 @@
 
 A remote personal sales service tailored for small and medium-sized business owners. The business focuses on providing hands-on, personalized sales support delivered entirely remotely, helping SMB owners grow their revenue without the need for an in-house sales team. The brand likely emphasizes professionalism, personal attention, and measurable business results.
 
-Source: https://apex-3f80b74a.zappy5.app
+Source: https://example.com
 
 ---
 
 ## asynchronous apex in salesforce — APEX
 
-URL: https://apex-3f80b74a.zappy5.app
+URL: https://example.com
 Description: A remote personal sales service tailored for small and medium-sized business owners. The business focuses on providing hands-on, personalized sales support deli
 
 asynchronous apex in salesforce — APEX
@@ -879,7 +879,7 @@ Conversion Uplift
 
 ## מדיניות פרטיות
 
-URL: https://apex-3f80b74a.zappy5.app/privacy
+URL: https://example.com/privacy
 Description: מדיניות הפרטיות שלנו - כיצד אנו אוספים, משתמשים ומגנים על המידע שלכם
 
 מדיניות פרטיות
@@ -1079,7 +1079,7 @@ APEX ("החברה", "אנו", "שלנו") מחויבת להגן על פרטיו�
 
 ## הצהרת נגישות
 
-URL: https://apex-3f80b74a.zappy5.app/accessibility
+URL: https://example.com/accessibility
 Description: הצהרת הנגישות שלנו - מחויבותנו לנגישות דיגיטלית
 
 הצהרת נגישות
@@ -1288,7 +1288,7 @@ APEX מחויבת להנגיש את השירותים לכלל הציבור. אנ
 
 ## תנאי שימוש
 
-URL: https://apex-3f80b74a.zappy5.app/terms
+URL: https://example.com/terms
 Description: תנאי השימוש באתר - הזכויות והחובות של המשתמשים
 
 תנאי שימוש
