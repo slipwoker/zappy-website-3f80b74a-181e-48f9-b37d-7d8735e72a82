@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <title>asynchronous apex in salesforce — APEX</title>
+    <meta name="description" content="A remote personal sales service tailored for small and medium-sized business owners. The business focuses on providing hands-on, personalized sales support deli">
+    <meta name="keywords" content="asynchronous apex in salesforce, batch apex in salesforce, sales consulting firms, sales consulting services">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/assets/favicon-512x512.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    <!-- Zappy Analytics -->
+<script>
+(function() {
+  'use strict';
+  
+  // Configuration
+  var config = {
+    websiteId: '3f80b74a-181e-48f9-b37d-7d8735e72a82',
+    apiUrl: 'https://api.zappy5.com/api/analytics/track',
+    sessionDuration: 30 * 60 * 1000, // 30 minutes
+    visitorDuration: 30 * 24 * 60 * 60 * 1000, // 30 days
+    trackPageViews: true,
+    trackClicks: true,
+    trackFormSubmissions: true
+  };
+  
+  // Generate or retrieve persistent visitor ID (30 days)
+  function getVisitorId() {
+    var visitorKey = 'zappy_visitor_' + config.websiteId;
+    var visitor = null;
+    
+    try {
+      visitor = localStorage.getItem(visitorKey);
+      if (visitor) {
+        var visitorData = JSON.parse(visitor);
+        var now = Date.now();
+        
+        // Check if visitor ID is still valid (30 days)
+        if (now - visitorData.created < config.visitorDuration) {
+          // Update last seen timestamp
+          visitorData.lastSeen = now;
+          localStorage.setItem(visitorKey, JSON.stringify(visitorData));
+          return visitorData.id;
+        }
+      }
+    } catch (e) {
+      console.warn('Zappy Analytics: LocalStorage not available');
+    }
+    
+    // Generate new visitor ID
+    var newVisitorId = 'zv_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    try {
+      localStorage.setItem(visitorKey, JSON.stringify({
+        id: newVisitorId,
+        created: Date.now(),
+        lastSeen: Date.now()
+      }));
+    } catch (e) {
+      // Continue without local storage
+    }
+    
+    return newVisitorId;
+  }
+  
+  // Generate or retrieve session ID (30 minutes)
+  function getSessionId() {
+    var sessionKey = 'zappy_session_' + config.websiteId;
+    var session = null;
+    
+    try {
+      session = sessionStorage.getItem(sessionKey);
+      if (session) {
+        var sessionData = JSON.parse(session);
+        var now = Date.now();
+        
+        // Check if session is still valid
+        if (now - sessionData.timestamp < config.sessionDuration) {
+          // Update timestamp
+          sessionData.timestamp = now;
+          sessionStorage.setItem(sessionKey, JSON.stringify(sessionData));
+          return sessionData.id;
+        }
+      }
+    } catch (e) {
+      console.warn('Zappy Analytics: SessionStorage not available');
+    }
+    
+    // Generate new session ID
+    var newSessionId = 'zs_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    try {
+      sessionStorage.setItem(sessionKey, JSON.stringify({
+        id: newSessionId,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      // Continue without session storage
+    }
+    
+    return newSessionId;
+  }
+  
+  var visitorId = getVisitorId();
+  var sessionId = getSessionId();
+  
+  // Track an event
+  function trackEvent(eventType, data) {
+    data = data || {};
+    
+    var eventData = {
+      website_id: config.websiteId,
+      event_type: eventType,
+      page_path: window.location.pathname,
+      referrer: document.referrer || 'direct',
+      visitor_id: visitorId,
+      session_id: sessionId,
+      metadata: data
+    };
+    
+    // Use sendBeacon if available (better for page unload events)
+    if (navigator.sendBeacon) {
+      var blob = new Blob([JSON.stringify(eventData)], { type: 'application/json' });
+      navigator.sendBeacon(config.apiUrl, blob);
+    } else {
+      // Fallback to fetch
+      fetch(config.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(eventData),
+        keepalive: true
+      }).catch(function(error) {
+        console.warn('Zappy Analytics: Failed to track event', error);
+      });
+    }
+  }
+  
+  // Track page view
+  if (config.trackPageViews) {
+    trackEvent('pageview', {
+      title: document.title,
+      url: window.location.href
+    });
+  }
+  
+  // Track clicks on important elements
+  if (config.trackClicks) {
+    document.addEventListener('click', function(e) {
+      var target = e.target;
+      
+      // Track button clicks (counted as actions)
+      if (target.tagName === 'BUTTON' || target.closest('button')) {
+        var button = target.tagName === 'BUTTON' ? target : target.closest('button');
+        trackEvent('click', {
+          element: 'button',
+          text: button.textContent.trim().substring(0, 100),
+          id: button.id || null,
+          class: button.className || null
+        });
+      }
+      
+      // Track link clicks (navigation - not counted as actions)
+      else if (target.tagName === 'A' || target.closest('a')) {
+        var link = target.tagName === 'A' ? target : target.closest('a');
+        trackEvent('navigation', {
+          element: 'link',
+          text: link.textContent.trim().substring(0, 100),
+          href: link.href,
+          external: link.hostname !== window.location.hostname
+        });
+      }
+    }, true);
+  }
+  
+  // Track form submissions
+  if (config.trackFormSubmissions) {
+    document.addEventListener('submit', function(e) {
+      var form = e.target;
+      
+      trackEvent('form_submit', {
+        form_id: form.id || null,
+        form_name: form.name || null,
+        form_action: form.action || null,
+        form_method: form.method || 'GET'
+      });
+    }, true);
+  }
+  
+  // Track time on page (send on page unload)
+  var pageLoadTime = Date.now();
+  
+  window.addEventListener('beforeunload', function() {
+    var timeOnPage = Math.floor((Date.now() - pageLoadTime) / 1000); // in seconds
+    
+    trackEvent('page_unload', {
+      time_on_page: timeOnPage,
+      page_path: window.location.pathname
+    });
+  });
+  
+  // Expose tracking function globally for custom events
+  window.zappyAnalytics = {
+    track: trackEvent,
+    getVisitorId: function() { return visitorId; },
+    getSessionId: function() { return sessionId; }
+  };
+  
+})();
+</script>
+<!-- End Zappy Analytics -->
+    <meta property="og:title" content="asynchronous apex in salesforce — APEX">
+    <meta property="og:description" content="A remote personal sales service tailored for small and medium-sized business owners. The business focuses on providing hands-on, personalized sales support deli">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="asynchronous apex in salesforce — APEX">
+    <meta name="twitter:description" content="A remote personal sales service tailored for small and medium-sized business owners. The business focuses on providing hands-on, personalized sales support deli">
+    <meta property="og:type" content="website">
+  <meta property="og:locale" content="he_IL">
+  
+  
+  
+  
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .skip-link { position: absolute; top: 0; left: 0; transform: translateY(-200%); padding: 12px 18px; background: var(--bg-dark, #1a1a1a); color: var(--text-light, #fff); font-weight: 600; border-radius: 0 0 8px 0; z-index: 10000; }
+    .skip-link:focus { transform: none; outline: 2px solid var(--ring, #fff); outline-offset: 2px; }
+    :focus-visible { outline: 2px solid var(--ring, currentColor); outline-offset: 3px; }
+  </style>
+
+
+  
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/assets/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/assets/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/favicon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/assets/favicon-512x512.png">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    <!-- Cookie Consent -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vanilla-cookieconsent@3/dist/cookieconsent.css">
+    <script src="https://cdn.jsdelivr.net/npm/vanilla-cookieconsent@3/dist/cookieconsent.umd.js"></script>
+    <!-- Mickidum Accessibility Toolbar -->
+    <script src="https://cdn.jsdelivr.net/gh/mickidum/acc_toolbar/acctoolbar/acctoolbar.min.js"></script>
+    <link rel="stylesheet" href="/styles.css">
+
+    <style id="zappy-dropdown-submenu-styles">
+      /* ========== DESKTOP DROPDOWN SUBMENU STYLES ========== */
+      /* Base styles for dropdown submenus - parent must be positioned */
+      .nav-menu li:has(.sub-menu), nav li:has(.sub-menu), .navbar li:has(.sub-menu), #navMenu li:has(.sub-menu) { position: relative; }
+      /* Submenu base - hidden by default */
+      .nav-menu .sub-menu, nav .sub-menu, .navbar .sub-menu, #navMenu .sub-menu { display: block !important; position: absolute !important; top: 100%; left: 0; min-width: 220px; background: white; border-radius: 8px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); padding: 8px 0; opacity: 0; visibility: hidden; transform: translateY(10px); transition: all 0.3s ease; z-index: 1000; list-style: none; pointer-events: none; }
+      /* CRITICAL: Desktop hover styles to show dropdown */
+      .nav-menu li:hover > .sub-menu, nav li:hover > .sub-menu, .navbar li:hover > .sub-menu, #navMenu li:hover > .sub-menu { opacity: 1 !important; visibility: visible !important; transform: translateY(0) !important; pointer-events: auto !important; }
+      /* Submenu item styling */
+      .sub-menu li { list-style: none; margin: 0; padding: 0; }
+      .sub-menu a { display: block !important; padding: 10px 16px !important; color: var(--text-dark, #333) !important; font-weight: 500; text-decoration: none; white-space: nowrap; transition: background-color 0.2s; }
+      .sub-menu .zappy-nav-child > a { padding-left: 28px !important; font-size: 0.9em !important; opacity: 0.85 !important; }
+      [dir="rtl"] .sub-menu .zappy-nav-child > a, html[lang="he"] .sub-menu .zappy-nav-child > a, html[lang="ar"] .sub-menu .zappy-nav-child > a { padding-left: 10px !important; padding-right: 28px !important; }
+      .sub-menu .zappy-nav-parent > a { font-weight: 600 !important; }
+      .sub-menu a:hover { background-color: #f5f5f5; }
+      /* RTL (Hebrew/Arabic) dropdown positioning */
+      [dir="rtl"] .nav-menu .sub-menu, [dir="rtl"] nav .sub-menu, [dir="rtl"] .navbar .sub-menu, html[lang="he"] .nav-menu .sub-menu, html[lang="he"] nav .sub-menu, html[lang="he"] .navbar .sub-menu, html[lang="ar"] .nav-menu .sub-menu, html[lang="ar"] nav .sub-menu, html[lang="ar"] .navbar .sub-menu { left: auto !important; right: 0 !important; }
+      /* Hide empty dropdown menus (exclude catalog sub-menus that use <a> children instead of <li>) */
+      .sub-menu:empty, .sub-menu:not(:has(li:not(.zappy-hidden-menu-item))):not(:has(> a)), .sub-menu:not(:has(li)):not(:has(> a)) { display: none !important; opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+      /* Desktop: show submenu on Menu Group hover */
+      li:has(.menu-group-title):hover > .sub-menu { opacity: 1 !important; visibility: visible !important; transform: translateY(0) !important; pointer-events: auto !important; }
+      /* Menu Group title styling */
+      .nav-menu > li > .menu-group-title, #navMenu > li > .menu-group-title { display: inline-block; padding: 0.5rem 1rem; cursor: default; user-select: none; }
+      
+      /* ========== MOBILE SUBMENU STYLES ========== */
+      @media (max-width: 768px) {
+        .nav-menu .sub-menu, nav .sub-menu, .navbar .sub-menu, #navMenu .sub-menu { position: static !important; transform: none !important; box-shadow: none !important; background: transparent !important; max-height: 0; overflow: hidden; opacity: 0; visibility: hidden; transition: max-height 0.3s ease, opacity 0.3s ease; padding: 0 !important; border-radius: 0 !important; }
+        .navbar .sub-menu.mobile-expanded, .nav-menu .sub-menu.mobile-expanded, #navMenu .sub-menu.mobile-expanded { max-height: none !important; overflow-y: visible !important; opacity: 1 !important; visibility: visible !important; padding: 8px 0 8px 16px !important; }
+        [dir="rtl"] .sub-menu.mobile-expanded, html[lang="he"] .sub-menu.mobile-expanded { padding: 8px 16px 8px 0 !important; }
+        /* Disable hover behavior on mobile */
+        .nav-menu li:hover > .sub-menu, nav li:hover > .sub-menu, .navbar li:hover > .sub-menu, #navMenu li:hover > .sub-menu { opacity: 0; visibility: hidden; pointer-events: none; }
+        .nav-menu li > .sub-menu.mobile-expanded, nav li > .sub-menu.mobile-expanded, .navbar li > .sub-menu.mobile-expanded, #navMenu li > .sub-menu.mobile-expanded { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
+        .nav-menu li:has(.sub-menu), nav li:has(.sub-menu), .navbar li:has(.sub-menu), #navMenu li:has(.sub-menu) { display: flex !important; flex-wrap: wrap !important; align-items: center !important; position: relative !important; min-height: 44px !important; }
+        .nav-menu li:has(.sub-menu) > a, nav li:has(.sub-menu) > a, .navbar li:has(.sub-menu) > a, #navMenu li:has(.sub-menu) > a { flex: 1 !important; min-width: 0 !important; }
+        .nav-menu li:has(.sub-menu) > .menu-group-title, nav li:has(.sub-menu) > .menu-group-title, .navbar li:has(.sub-menu) > .menu-group-title, #navMenu li:has(.sub-menu) > .menu-group-title { flex: 1 !important; min-width: 0 !important; padding: 0 !important; line-height: inherit !important; }
+        .nav-menu li:has(.sub-menu) > .sub-menu, nav li:has(.sub-menu) > .sub-menu, .navbar li:has(.sub-menu) > .sub-menu, #navMenu li:has(.sub-menu) > .sub-menu { flex-basis: 100% !important; width: 100% !important; }
+        .nav-menu li:has(.sub-menu) > a [class*="chevron"], .nav-menu li:has(.sub-menu) > a [class*="arrow"], .nav-menu li:has(.sub-menu) > a .fa-chevron-down, .nav-menu li:has(.sub-menu) > a .fa-angle-down, nav li:has(.sub-menu) > a [class*="chevron"], nav li:has(.sub-menu) > a [class*="arrow"], #navMenu li:has(.sub-menu) > a [class*="chevron"], #navMenu li:has(.sub-menu) > a [class*="arrow"] { display: none !important; visibility: hidden !important; }
+        .mobile-submenu-toggle { display: flex !important; align-items: center !important; justify-content: center !important; width: 44px !important; height: auto !important; background: transparent !important; border: none !important; cursor: pointer !important; color: var(--text-light) !important; position: static !important; flex-shrink: 0 !important; align-self: stretch !important; z-index: 2 !important; padding: 0 !important; margin: 0 !important; }
+        .mobile-submenu-toggle::after { content: '' !important; width: 0 !important; height: 0 !important; border-left: 6px solid transparent !important; border-right: 6px solid transparent !important; border-top: 7px solid currentColor !important; transition: transform 0.3s ease !important; }
+        .mobile-submenu-toggle.expanded::after { transform: rotate(180deg) !important; }
+        .sub-menu a { padding: 10px 0 !important; display: block !important; color: var(--text-light) !important; white-space: normal !important; }
+        .sub-menu .zappy-nav-child > a { padding-left: 28px !important; font-size: 0.9em !important; opacity: 0.85 !important; }
+        [dir="rtl"] .sub-menu .zappy-nav-child > a, html[lang="he"] .sub-menu .zappy-nav-child > a, html[lang="ar"] .sub-menu .zappy-nav-child > a { padding-left: 0 !important; padding-right: 28px !important; }
+        .sub-menu .zappy-nav-parent > a { font-weight: 600 !important; }
+        .nav-menu.active, #navMenu.active { max-width: 100vw !important; overflow-x: hidden !important; box-sizing: border-box !important; }
+        .navbar .sub-menu li a, nav.navbar .sub-menu li a, .zappy-products-dropdown .sub-menu a { color: var(--text-light) !important; }
+      }
+      @media (min-width: 769px) { .mobile-submenu-toggle { display: none !important; } }
+    </style>
+
+    <style id="zappy-widget-visibility">
+      html[dir="rtl"] .whatsapp-float { right: 20px !important; left: auto !important; }
+      html[dir="ltr"] .whatsapp-float, html:not([dir]) .whatsapp-float { left: 20px !important; right: auto !important; }
+      html[dir="rtl"] #mic-access-tool-general-button, html[dir="rtl"] .mic-access-tool-general-button,
+      html[dir="rtl"] #mic-init-access-tool .mic-access-tool-general-button,
+      html[dir="rtl"] #mic-init-access-tool #mic-access-tool-general-button,
+      html[dir="rtl"] ._access-icon { left: 20px !important; right: auto !important; }
+      html[dir="ltr"] #mic-access-tool-general-button, html[dir="ltr"] .mic-access-tool-general-button,
+      html[dir="ltr"] #mic-init-access-tool .mic-access-tool-general-button,
+      html[dir="ltr"] #mic-init-access-tool #mic-access-tool-general-button,
+      html[dir="ltr"] ._access-icon,
+      html:not([dir]) #mic-access-tool-general-button, html:not([dir]) .mic-access-tool-general-button,
+      html:not([dir]) #mic-init-access-tool .mic-access-tool-general-button,
+      html:not([dir]) #mic-init-access-tool #mic-access-tool-general-button,
+      html:not([dir]) ._access-icon { right: 20px !important; left: auto !important; }
+      @media (max-width: 768px) { .whatsapp-float { display: flex !important; } }
+      @media (min-width: 769px) { .whatsapp-float { display: flex !important; } }
+      @media (max-width: 768px) {
+        #mic-access-tool-general-button, .mic-access-tool-general-button,
+        #mic-init-access-tool .mic-access-tool-general-button, #mic-init-access-tool #mic-access-tool-general-button,
+        ._access-icon { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; }
+        #mic-access-tool-box.opened-mic-access-tool, .mic-access-tool-box.opened-mic-access-tool,
+        #mic-init-access-tool #mic-access-tool-box.opened-mic-access-tool {
+          visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;
+        }
+      }
+      @media (min-width: 769px) {
+        #mic-access-tool-general-button, .mic-access-tool-general-button,
+        #mic-init-access-tool .mic-access-tool-general-button, #mic-init-access-tool #mic-access-tool-general-button,
+        ._access-icon { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; }
+        #mic-access-tool-box.opened-mic-access-tool, .mic-access-tool-box.opened-mic-access-tool,
+        #mic-init-access-tool #mic-access-tool-box.opened-mic-access-tool {
+          visibility: visible !important; opacity: 1 !important; pointer-events: auto !important;
+        }
+      }
+    </style>
+</head>
+<body>
+<a class="skip-link" href="#main">דלג לתוכן הראשי</a>
+  <nav class="navbar" dir="rtl">
+  <button class="mobile-toggle" id="mobileToggle" aria-label="Menu">
+    <svg class="hamburger-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M3 12h18M3 6h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+    </svg>
+    <svg class="close-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" style="display: none;">
+      <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+    </svg>
+  </button>
+
+  <button class="phone-header-btn" data-phone="[business_phone]" aria-label="Call">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+    </svg>
+  </button>
+
+  <div class="nav-container">
+    <div class="nav-right-group"><div class="nav-brand">
+      <a href="/" class="logo-link"><img class="logo" src="/assets/site-----image-1.webp" alt="APEX"></a>
+    </div><ul class="nav-menu" id="navMenu"><li><a href="#services">שירותים</a></li><li><a href="#value-proposition">הצעת הערך</a></li><li><a href="#testimonials">המלצות</a></li><li><a href="#stats">נתונים</a></li><li><a href="#process">תהליך</a></li></ul></div>
+
+    
+
+    <div class="nav-cta-container">
+      <a href="#contact" class="nav-cta-btn">צור קשר</a>
+    </div>
+  </div>
+</nav>
+<script>
+
+// Navbar Mobile Menu Toggle and Contrast Fix
+(function() {
+  // Use 'load' event instead of 'DOMContentLoaded' to ensure we run AFTER all other scripts
+  window.addEventListener('load', function() {
+    
+    // FIX MOBILE BUTTON CONTRAST
+    // Detect navbar background color and apply contrasting color to mobile buttons
+    const navbar = document.querySelector('.navbar, nav, header');
+    if (!navbar) {
+      console.log('[Navbar] Navbar element not found');
+      return;
+    }
+    
+    // DECLARE VARIABLES EARLY to avoid Temporal Dead Zone errors
+    // These are used in multiple places below
+    let mobileToggle = document.getElementById('mobileToggle') ||
+                       document.querySelector('.mobile-toggle') ||
+                       document.querySelector('.hamburger') ||
+                       document.querySelector('.hamburger-menu') ||
+                       document.querySelector('.menu-toggle') ||
+                       document.querySelector('.burger-menu') ||
+                       document.querySelector('[aria-label="Menu"]') ||
+                       document.querySelector('[aria-label="תפריט"]');
+    
+    const phoneBtn = document.querySelector('.phone-header-btn');
+    
+    const computedStyle = window.getComputedStyle(navbar);
+    let bgColor = computedStyle.backgroundColor;
+    
+    console.log('[Navbar] Initial navbar background:', bgColor);
+    
+    // Check if background is transparent or rgba with 0 alpha
+    const isTransparent = bgColor === 'transparent' || 
+                         bgColor === 'rgba(0, 0, 0, 0)' ||
+                         (bgColor.startsWith('rgba') && bgColor.includes(', 0)'));
+    
+    if (isTransparent) {
+      // Check for background-image or gradient
+      const bgImage = computedStyle.backgroundImage;
+      if (bgImage && bgImage !== 'none') {
+        console.log('[Navbar] Navbar has background image/gradient, using dark text');
+        bgColor = 'rgb(240, 240, 240)'; // Assume light background
+      } else {
+        // Transparent navbar - check body background
+        const bodyBg = window.getComputedStyle(document.body).backgroundColor;
+        console.log('[Navbar] Navbar transparent, using body background:', bodyBg);
+        bgColor = bodyBg;
+      }
+    }
+    
+    // Calculate luminance to determine if background is light or dark
+    const rgb = bgColor.match(/\d+/g);
+    if (rgb && rgb.length >= 3) {
+      const r = parseInt(rgb[0]);
+      const g = parseInt(rgb[1]);
+      const b = parseInt(rgb[2]);
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      
+      // Mobile button colors are set by Claude's AI-generated CSS (same as .nav-menu a)
+      // No dynamic color overrides needed - colors come from the generated navbar CSS
+      console.log('[Navbar] Mobile button colors preserved from Claude CSS (luminance:', luminance.toFixed(2) + ')');
+      
+      // FIX ICON SIZES - Ensure SVGs are properly sized and visible
+      // INJECT CRITICAL CSS TO OVERRIDE ANY CONFLICTING RULES
+      const criticalCSS = document.createElement('style');
+      criticalCSS.id = 'zappy-mobile-nav-fix';
+      const htmlLang = document.documentElement.lang || 'en';
+      const htmlDir = document.documentElement.dir || 'ltr';
+      // Check both dir attribute AND lang for RTL detection
+      // dir="rtl" is the most reliable indicator
+      const isRTL = htmlDir === 'rtl' || htmlLang === 'he' || htmlLang === 'ar';
+      
+      criticalCSS.textContent = `
+        /* Hide mobile buttons on desktop, show only on mobile */
+        @media (min-width: 769px) {
+          .mobile-toggle,
+          .phone-header-btn {
+            display: none !important;
+          }
+        }
+        
+        /* Show and position mobile buttons correctly on mobile */
+        @media (max-width: 768px) {
+          .navbar,
+          nav.navbar {
+            min-height: 70px !important;
+          }
+
+          .mobile-toggle,
+          .phone-header-btn {
+            position: absolute !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            margin-top: auto !important;
+            margin-bottom: auto !important;
+            transform: none !important;
+            z-index: 1001 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 50% !important;
+            border: none !important;
+            cursor: pointer !important;
+            padding: 6px !important;
+            background: none !important;
+            color: var(--nav-text, var(--text-light)) !important;
+            touch-action: manipulation !important;
+            -webkit-tap-highlight-color: transparent !important;
+          }
+
+          html[data-zappy-site-type="ecommerce"] .phone-header-btn,
+          body[data-zappy-site-type="ecommerce"] .phone-header-btn,
+          html[data-zappy-site-type="ecommerce"] header .phone-header-btn,
+          html[data-zappy-site-type="ecommerce"] nav .phone-header-btn {
+            display: none !important;
+            visibility: hidden !important;
+            width: 0 !important;
+            height: 0 !important;
+            min-width: 0 !important;
+            overflow: hidden !important;
+          }
+          
+          /* LTR positioning (default): hamburger LEFT, phone RIGHT */
+          html:not([dir="rtl"]):not([lang="he"]):not([lang="ar"]) .mobile-toggle,
+          html[dir="ltr"] .mobile-toggle {
+            left: 12px !important;
+            right: auto !important;
+          }
+          html:not([dir="rtl"]):not([lang="he"]):not([lang="ar"]) .phone-header-btn,
+          html[dir="ltr"] .phone-header-btn {
+            right: 12px !important;
+            left: auto !important;
+          }
+          
+          /* RTL positioning: hamburger RIGHT, phone LEFT */
+          html[dir="rtl"] .mobile-toggle,
+          html[lang="he"] .mobile-toggle,
+          html[lang="ar"] .mobile-toggle {
+            right: 12px !important;
+            left: auto !important;
+          }
+          html[dir="rtl"] .phone-header-btn,
+          html[lang="he"] .phone-header-btn,
+          html[lang="ar"] .phone-header-btn {
+            left: 12px !important;
+            right: auto !important;
+          }
+          
+          /* CRITICAL: Ensure nav-container has min-height on mobile */
+          /* All children are positioned absolutely/fixed on mobile, so height:auto collapses to 0 */
+          .nav-container {
+            min-height: 70px !important;
+            position: relative !important;
+          }
+          
+          /* Ensure SVG icons are properly sized and inherit color */
+          .mobile-toggle svg,
+          .phone-header-btn svg {
+            width: 24px !important;
+            height: 24px !important;
+            /* Don't force display - let JavaScript control hamburger/close toggle */
+          }
+          
+          /* Reset nav-cta-container on mobile - remove desktop box-shadow/padding */
+          /* that creates a visible ghost box when CTA button is hidden */
+          .nav-cta-container {
+            box-shadow: none !important;
+            padding: 0 !important;
+          }
+          
+          /* Hide nav-cta-container entirely on mobile when there's no lang-switcher */
+          /* (only the CTA button is inside, and it's hidden on mobile) */
+          .nav-cta-container:not(:has(.lang-switcher)) {
+            display: none !important;
+          }
+          
+          /* CRITICAL: Prevent hero image fade gradient from bleeding over headline text */
+          /* The .image-fade-gradient has bottom: -30px (extends below parent) */
+          /* On mobile stacked layout, this overlaps the h1 text below the image */
+          .hero-image-column {
+            overflow: hidden !important;
+          }
+          .image-fade-gradient {
+            bottom: 0 !important;
+          }
+          
+          /* Hide desktop language switcher on mobile - hamburger menu handles it */
+          /* High specificity to override stored CSS */
+          .lang-switcher,
+          .nav-cta-container .lang-switcher,
+          .nav-container .lang-switcher,
+          .navbar .lang-switcher,
+          .navbar .nav-cta-container .lang-switcher {
+            display: none !important;
+          }
+        }
+      `;
+      
+      // Remove existing fix if present and inject new one
+      const existing = document.getElementById('zappy-mobile-nav-fix');
+      if (existing) existing.remove();
+      document.head.appendChild(criticalCSS);
+      
+      console.log('[Navbar] Critical CSS injected for mobile nav positioning');
+      
+      // ONLY apply inline positioning styles on mobile viewport
+      // On desktop, the CSS handles hiding these buttons with display: none
+      // Inline styles were breaking desktop layout by overriding CSS
+      const isMobileViewport = window.innerWidth <= 768;
+      
+      if (mobileToggle) {
+        // Icon sizing applies to all viewports for consistency
+        const hamburgerIcon = mobileToggle.querySelector('.hamburger-icon');
+        const closeIcon = mobileToggle.querySelector('.close-icon');
+        
+        if (hamburgerIcon) {
+          hamburgerIcon.style.setProperty('width', '24px', 'important');
+          hamburgerIcon.style.setProperty('height', '24px', 'important');
+          hamburgerIcon.style.setProperty('display', 'block', 'important'); // Show hamburger by default
+        }
+        if (closeIcon) {
+          closeIcon.style.setProperty('width', '24px', 'important');
+          closeIcon.style.setProperty('height', '24px', 'important');
+          closeIcon.style.setProperty('display', 'none', 'important'); // Hide close icon by default
+        }
+        
+        // ONLY set positioning inline styles on mobile
+        if (isMobileViewport) {
+          mobileToggle.style.setProperty('position', 'absolute', 'important');
+          mobileToggle.style.setProperty('top', '0', 'important');
+          mobileToggle.style.setProperty('bottom', '0', 'important');
+          mobileToggle.style.setProperty('margin-top', 'auto', 'important');
+          mobileToggle.style.setProperty('margin-bottom', 'auto', 'important');
+          mobileToggle.style.setProperty('transform', 'none', 'important');
+          mobileToggle.style.setProperty('z-index', '1001', 'important');
+          
+          // Clear any inline left/right so CSS can take over based on html[dir]
+          mobileToggle.style.removeProperty('left');
+          mobileToggle.style.removeProperty('right');
+          
+          console.log('[Navbar] Mobile toggle positioning applied (mobile viewport)');
+        } else {
+          // On desktop, clear any positioning styles to let CSS handle it
+          mobileToggle.style.removeProperty('position');
+          mobileToggle.style.removeProperty('top');
+          mobileToggle.style.removeProperty('transform');
+          mobileToggle.style.removeProperty('z-index');
+          mobileToggle.style.removeProperty('left');
+          mobileToggle.style.removeProperty('right');
+          console.log('[Navbar] Desktop viewport - cleared mobile toggle inline positioning');
+        }
+      }
+      
+      if (phoneBtn) {
+        // Icon sizing applies to all viewports
+        const phoneIcon = phoneBtn.querySelector('svg');
+        if (phoneIcon) {
+          phoneIcon.style.width = '24px';
+          phoneIcon.style.height = '24px';
+          phoneIcon.setAttribute('width', '24');
+          phoneIcon.setAttribute('height', '24');
+        }
+        
+        // ONLY set positioning inline styles on mobile
+        if (isMobileViewport) {
+          phoneBtn.style.setProperty('position', 'absolute', 'important');
+          phoneBtn.style.setProperty('top', '0', 'important');
+          phoneBtn.style.setProperty('bottom', '0', 'important');
+          phoneBtn.style.setProperty('margin-top', 'auto', 'important');
+          phoneBtn.style.setProperty('margin-bottom', 'auto', 'important');
+          phoneBtn.style.setProperty('transform', 'none', 'important');
+          phoneBtn.style.setProperty('z-index', '1001', 'important');
+          
+          // Clear any inline left/right so CSS can take over based on html[dir]
+          phoneBtn.style.removeProperty('left');
+          phoneBtn.style.removeProperty('right');
+          
+          console.log('[Navbar] Phone button positioning applied (mobile viewport)');
+        } else {
+          // On desktop, clear any positioning styles to let CSS handle it
+          phoneBtn.style.removeProperty('position');
+          phoneBtn.style.removeProperty('top');
+          phoneBtn.style.removeProperty('transform');
+          phoneBtn.style.removeProperty('z-index');
+          phoneBtn.style.removeProperty('left');
+          phoneBtn.style.removeProperty('right');
+          console.log('[Navbar] Desktop viewport - cleared phone button inline positioning');
+        }
+      }
+    } else {
+      console.log('[Navbar] Could not parse background color:', bgColor);
+    }
+    
+    // MOBILE MENU TOGGLE
+    // Re-query in case DOM changed (mobileToggle already declared at top of function)
+    mobileToggle = document.getElementById('mobileToggle') ||
+                   document.querySelector('.mobile-toggle') ||
+                   document.querySelector('.hamburger') ||
+                   document.querySelector('.hamburger-menu') ||
+                   document.querySelector('.menu-toggle') ||
+                   document.querySelector('.burger-menu') ||
+                   document.querySelector('[aria-label="Menu"]') ||
+                   document.querySelector('[aria-label="תפריט"]');
+    
+    // EXPANDED SEARCH: Find nav menu by ID or class
+    const navMenu = document.getElementById('navMenu') ||
+                  document.querySelector('.nav-menu') ||
+                  document.querySelector('.nav-links') ||
+                  document.querySelector('nav ul:not(.submenu)');
+    
+    if (!mobileToggle || !navMenu) {
+      console.log('[Navbar] Mobile toggle or menu not found:', { toggle: !!mobileToggle, menu: !!navMenu });
+      return;
+    }
+    
+    // Ensure navMenu has ID for CSS targeting
+    if (!navMenu.id) {
+      navMenu.id = 'navMenu';
+    }
+    
+    console.log('[Navbar] Initializing mobile menu...');
+    
+    // Remove any existing event listeners by cloning the button
+    const newToggle = mobileToggle.cloneNode(true);
+    mobileToggle.parentNode.replaceChild(newToggle, mobileToggle);
+    
+    // Toggle menu handler (shared by click and touchend)
+    function handleToggle(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const hamburgerIcon = newToggle.querySelector('.hamburger-icon');
+      const closeIcon = newToggle.querySelector('.close-icon');
+      const isActive = navMenu.classList.contains('active');
+      
+      if (isActive) {
+        // Close menu
+        navMenu.classList.remove('active');
+        if (hamburgerIcon) hamburgerIcon.style.setProperty('display', 'block', 'important');
+        if (closeIcon) closeIcon.style.setProperty('display', 'none', 'important');
+        document.body.style.overflow = '';
+        console.log('[Navbar] Menu closed');
+      } else {
+        // Open menu
+        navMenu.classList.add('active');
+        if (hamburgerIcon) hamburgerIcon.style.setProperty('display', 'none', 'important');
+        if (closeIcon) closeIcon.style.setProperty('display', 'block', 'important');
+        document.body.style.overflow = 'hidden';
+        console.log('[Navbar] Menu opened');
+      }
+    }
+    
+    // Use click for desktop/emulation and touchend as iOS Safari fallback.
+    // Prevent double-fire with a timestamp guard.
+    var lastToggleTime = 0;
+    function guardedToggle(e) {
+      var now = Date.now();
+      if (now - lastToggleTime < 300) return;
+      lastToggleTime = now;
+      handleToggle(e);
+    }
+    
+    newToggle.addEventListener('click', guardedToggle);
+    newToggle.addEventListener('touchend', guardedToggle);
+    
+    // Close menu when clicking nav links (but NOT dropdown toggles)
+    const navLinks = navMenu.querySelectorAll('a');
+    navLinks.forEach(function(link) {
+      link.addEventListener('click', function() {
+        // Don't close if it's a dropdown child (unless it's a real navigation link)
+        if (this.getAttribute('href') === '#') return;
+        
+        const hamburgerIcon = newToggle.querySelector('.hamburger-icon');
+        const closeIcon = newToggle.querySelector('.close-icon');
+        
+        navMenu.classList.remove('active');
+        if (hamburgerIcon) hamburgerIcon.style.setProperty('display', 'block', 'important');
+        if (closeIcon) closeIcon.style.setProperty('display', 'none', 'important');
+        document.body.style.overflow = '';
+        console.log('[Navbar] Menu closed (link clicked)');
+      });
+    });
+    
+    // DROPDOWN MENU TOGGLE (for mobile and touch devices)
+    var dropdownToggles = navMenu.querySelectorAll('.dropdown-toggle');
+    dropdownToggles.forEach(function(toggle) {
+      toggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var parent = this.closest('.nav-dropdown');
+        if (!parent) return;
+        
+        // Close other open dropdowns at the same level
+        var siblings = parent.parentNode.querySelectorAll('.nav-dropdown.open');
+        siblings.forEach(function(sib) {
+          if (sib !== parent) sib.classList.remove('open');
+        });
+        
+        parent.classList.toggle('open');
+        console.log('[Navbar] Dropdown toggled:', parent.classList.contains('open') ? 'open' : 'closed');
+      });
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.nav-dropdown')) {
+        var openDropdowns = document.querySelectorAll('.nav-dropdown.open');
+        openDropdowns.forEach(function(dd) { dd.classList.remove('open'); });
+      }
+    });
+    
+    console.log('[Navbar] Dropdown handlers initialized for ' + dropdownToggles.length + ' dropdowns');
+    
+    // Phone button functionality (phoneBtn already declared at top of function)
+    if (phoneBtn) {
+      phoneBtn.addEventListener('click', function() {
+        // Get phone number from placeholder in page or use default
+        const phoneLinks = document.querySelectorAll('a[href^="tel:"]');
+        const phoneNumber = phoneLinks.length > 0 
+          ? phoneLinks[0].getAttribute('href').replace('tel:', '')
+          : '[business_phone]';
+        
+        window.location.href = 'tel:' + phoneNumber;
+        console.log('[Navbar] Phone button clicked');
+      });
+    }
+    
+    console.log('[Navbar] Mobile menu initialized successfully');
+    
+    // WhatsApp button visibility is now controlled via CSS (siteSettings).
+    // No JS-based desktop hiding — the button is visible on both mobile and desktop by default.
+  });
+})();
+
+</script>
+  
+  <main id="main">
+    <section data-band-index="0" id="hero" class="index-hero-section" data-layout-spec="בית-hero" dir="rtl" data-hero-type="fullscreen-scrim">
+  <!-- Background Image -->
+  <div class="index-hero-bg">
+    <img loading="eager" fetchpriority="high" data-hero-bg="true" data-placeholder="index-hero-image-1" data-context="Cinematic dark remote sales command center: a focused business owner in a modern home office on a video call with multiple analytics dashboards glowing on screens, city night skyline visible through a floor-to-ceiling window in the background, electric cyan and lime data visualizations, subtle light reflections on glass surfaces, high-stakes professional atmosphere, photorealistic brand film still aesthetic, deep dark tones with electric blue and green accent lighting" width="1440" height="900" src="/assets/site-index-hero-image-1.webp" alt="סביבת מכירה מרחוק מקצועית - בעל עסק על שיחת וידאו עם מסכי אנליטיקה">
+  </div>
+
+  <!-- Scrim Overlay -->
+  <div class="index-hero-scrim" aria-hidden="true"></div>
+
+  <!-- Grid Pattern Overlay -->
+  <div class="index-hero-grid-pattern" aria-hidden="true"></div>
+
+  <!-- KPI Chips (decorative, CSS only) -->
+  <div class="index-hero-kpi-chips" aria-hidden="true">
+    <div class="index-hero-kpi-chip">
+      <span class="index-hero-kpi-value">+340%</span>
+      <span class="index-hero-kpi-label">גידול בהכנסות</span>
+    </div>
+    <div class="index-hero-kpi-chip">
+      <span class="index-hero-kpi-value">100%</span>
+      <span class="index-hero-kpi-label">עבודה מרחוק</span>
+    </div>
+    <div class="index-hero-kpi-chip">
+      <span class="index-hero-kpi-value">SMB</span>
+      <span class="index-hero-kpi-label">מותאם לעסקים קטנים</span>
+    </div>
+  </div>
+
+  <!-- Hero Content -->
+  <div class="index-hero-container">
+    <div class="index-hero-overlay-group">
+
+      <div class="index-hero-eyebrow">
+        <span class="index-hero-eyebrow-dot" aria-hidden="true"></span>
+        <span>שירות מכירה אישי • מרחוק • מדיד</span>
+      </div>
+
+      <h1 class="index-hero-h1">
+        מכירות <span class="index-hero-accent-text">אישיות ומקצועיות</span><br>
+        לעסק שלך — מרחוק
+      </h1>
+
+      <h3 class="index-hero-subtitle">
+        תמיכת מכירה צמודה ומותאמת אישית, ללא צורך בצוות מכירות פנימי.
+        אנחנו מנהלים את תהליך המכירה עבורך — בזמן שאתה מתמקד בעסק.
+      </h3>
+
+      <div class="index-hero-micro-line">
+        <span class="index-hero-micro-item">
+          <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+          צמיחה מדידה בהכנסות
+        </span>
+        <span class="index-hero-micro-sep" aria-hidden="true"></span>
+        <span class="index-hero-micro-item">
+          <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
+          תשומת לב אישית
+        </span>
+        <span class="index-hero-micro-sep" aria-hidden="true"></span>
+        <span class="index-hero-micro-item">
+          <i class="fa-solid fa-wifi" aria-hidden="true"></i>
+          ביצוע מרחוק מלא
+        </span>
+      </div>
+
+      <div class="index-hero-ctas">
+        <a href="#contact" class="index-hero-btn-primary">
+          <span>בואו נדבר מכירות</span>
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+        </a>
+        <a href="#how-it-works" class="index-hero-btn-secondary">
+          <span>איך זה עובד</span>
+          <i class="fa-solid fa-play" aria-hidden="true"></i>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Cyan Edge Line + Bottom Divider -->
+  <div class="index-hero-divider-wrapper">
+    <div class="index-hero-cyan-line" aria-hidden="true"></div>
+    <svg data-no-icon-edit="true" aria-hidden="true" viewBox="0 0 1440 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" class="index-hero-divider-svg">
+      <path d="M0,80 L0,32 L1440,0 L1440,80 Z" fill="#0A0E1A"></path>
+    </svg>
+  </div>
+
+</section>
+
+<section data-band-index="1" id="services" class="index-services-section" data-layout-spec="בית-services" dir="rtl">
+  <!-- Background grid texture -->
+  <div class="index-services-bg-texture" aria-hidden="true"></div>
+
+  <!-- Intro Block -->
+  <div class="index-services-container">
+    <div class="index-services-intro">
+      <span class="index-services-eyebrow">מה אנחנו עושים</span>
+      <h2 class="index-services-title">שירותי מכירה אישיים,<br>מרחוק — בדיוק כמו שצריך</h2>
+      <p class="index-services-subtitle">בעלי עסקים קטנים ובינוניים מקבלים תמיכת מכירות צמודה, מקצועית ומדידה — בלי לגייס אנשי מכירות פנימיים. אנחנו עובדים כחלק מהצוות שלכם, מרחוק.</p>
+    </div>
+
+    <!-- Cards Grid -->
+    <div class="index-services-grid">
+
+      <!-- Card 1 -->
+      <article class="index-services-card">
+        <div class="index-services-card-icon-wrap">
+          <svg data-element-type="icon" data-icon-type="svg" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="14" cy="14" r="13" stroke="var(--secondary)" stroke-width="1.5"></circle>
+            <path d="M8 14.5l4 4 8-9" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </div>
+        <h3 class="index-services-card-title">ייצוג מכירות אישי מרחוק</h3>
+        <p class="index-services-card-desc">אנחנו מנהלים את תהליך המכירה עבורכם — מהפנייה הראשונה ועד לסגירת העסקה. שירות מלא, אישי ומקצועי שמחליף את הצורך בנציג מכירות штатный.</p>
+        <div class="index-services-card-proof">
+          <span class="index-services-proof-kpi">+40%</span>
+          <span class="index-services-proof-label">עלייה ממוצעת בשיעור הסגירה</span>
+        </div>
+      </article>
+
+      <!-- Card 2 (center — with backplate) -->
+      <article class="index-services-card index-services-card--center">
+        <div class="index-services-card-backplate" aria-hidden="true"></div>
+        <div class="index-services-card-icon-wrap">
+          <svg data-element-type="icon" data-icon-type="svg" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="3" y="6" width="22" height="16" rx="3" stroke="var(--secondary)" stroke-width="1.5"></rect>
+            <path d="M3 11h22" stroke="var(--secondary)" stroke-width="1.2"></path>
+            <circle cx="8" cy="17" r="1.5" fill="var(--accent)"></circle>
+            <path d="M12 17h8" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round"></path>
+          </svg>
+        </div>
+        <h3 class="index-services-card-title">מעקב לידים ותקשורת לקוחות</h3>
+        <p class="index-services-card-desc">אנחנו מטפלים בכל פנייה נכנסת, מבצעים פולואפ שיטתי ושומרים על קשר רציף עם לקוחות פוטנציאליים — כך שאף הזדמנות לא תיפול בין הכסאות.</p>
+        <div class="index-services-card-proof">
+          <span class="index-services-proof-kpi">3×</span>
+          <span class="index-services-proof-label">יותר עסקאות שנסגרות בזמן</span>
+        </div>
+      </article>
+
+      <!-- Card 3 -->
+      <article class="index-services-card">
+        <div class="index-services-card-icon-wrap">
+          <svg data-element-type="icon" data-icon-type="svg" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M5 22V10l9-6 9 6v12" stroke="var(--secondary)" stroke-width="1.5" stroke-linejoin="round"></path>
+            <rect x="10" y="14" width="8" height="8" rx="1" stroke="var(--accent)" stroke-width="1.5"></rect>
+            <path d="M14 14v8" stroke="var(--accent)" stroke-width="1" stroke-linecap="round"></path>
+          </svg>
+        </div>
+        <h3 class="index-services-card-title">חיזוק תהליך המכירה השוטף</h3>
+        <p class="index-services-card-desc">בניית שגרת מכירות יציבה, שיפור סקריפטים, ניתוח ביצועים ותמיכה שוטפת לבעלי עסקים שרוצים עקביות ותוצאות — לא רק מאמץ חד-פעמי.</p>
+        <div class="index-services-card-proof">
+          <span class="index-services-proof-kpi">90%</span>
+          <span class="index-services-proof-label">מהלקוחות מדווחים על עקביות גבוהה יותר</span>
+        </div>
+      </article>
+
+    </div>
+  </div>
+
+  <!-- Bottom Divider: gradient fade with lime pulse line -->
+  <div class="index-services-divider-wrapper" aria-hidden="true">
+    <div class="index-services-divider-gradient"></div>
+    <div class="index-services-divider-pulse-line"></div>
+  </div>
+</section>
+
+<section data-band-index="2" id="value-proposition" class="index-value-proposition-section" data-layout-spec="בית-value-proposition" dir="rtl">
+  <div class="ivp-container">
+    <div class="ivp-grid">
+
+      <!-- START column: content -->
+      <div class="ivp-content-col">
+        <span class="ivp-eyebrow">למה APEX?</span>
+        <h2 class="ivp-heading">מכירות אישיות, <br>תוצאות מדידות — <span class="ivp-heading-accent">מרחוק</span></h2>
+        <p class="ivp-intro">בעלי עסקים קטנים ובינוניים לא צריכים צוות מכירות פנימי כדי לצמוח. APEX מספקת מעורבות אישית, ניהול שיחות, וקידום עסקאות — הכול מרחוק, הכול מדיד.</p>
+
+        <div class="ivp-values-stack">
+          <div class="ivp-value-block">
+            <div class="ivp-value-icon">
+              <svg data-element-type="icon" data-icon-type="svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            </div>
+            <div class="ivp-value-text">
+              <h3>תשומת לב אישית, לא מיקור חוץ גנרי</h3>
+              <p>אתם מקבלים איש מכירות ייעודי שמכיר את העסק שלכם לעומק — לא סוכן קול סנטר אנונימי. כל שיחה, כל הצעה וכל עסקה מטופלות בגישה אישית ומקצועית.</p>
+            </div>
+          </div>
+
+          <div class="ivp-value-block">
+            <div class="ivp-value-icon">
+              <svg data-element-type="icon" data-icon-type="svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+            </div>
+            <div class="ivp-value-text">
+              <h3>יעילות מרחוק ללא תקורה פנימית</h3>
+              <p>אין צורך לגייס, להכשיר, או לנהל עובד מכירות. שירותי המכירה של APEX פועלים מרחוק בצורה חלקה, חוסכים לכם עלויות תפעוליות ומפנים אתכם לניהול העסק.</p>
+            </div>
+          </div>
+
+          <div class="ivp-value-block">
+            <div class="ivp-value-icon">
+              <svg data-element-type="icon" data-icon-type="svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+            </div>
+            <div class="ivp-value-text">
+              <h3>פעילות מכירות ממושמעת — צמיחה בהכנסות</h3>
+              <p>אנחנו לא רק מייעצים — אנחנו מבצעים. מעקב אחר לידים, ניהול פייפליין, וסגירת עסקאות. כל פעולה מחוברת למדדים ברורים של צמיחה בהכנסות.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- END column: dashboard visual -->
+      <div class="ivp-visual-col">
+        <div class="ivp-dashboard-wrapper">
+          <!-- Glow decoration -->
+          <div class="ivp-glow-decoration" aria-hidden="true"></div>
+
+          <!-- Main dashboard panel -->
+          <div class="ivp-dashboard-panel">
+            <!-- Dashboard header bar -->
+            <div class="ivp-dash-header">
+              <div class="ivp-dash-dots">
+                <span></span><span></span><span></span>
+              </div>
+              <span class="ivp-dash-title">APEX Remote Sales Dashboard</span>
+              <span class="ivp-dash-live"><span class="ivp-live-dot"></span>Live</span>
+            </div>
+
+            <!-- Dashboard body -->
+            <div class="ivp-dash-body">
+              <!-- Pipeline row -->
+              <div class="ivp-dash-section-label">Pipeline Movement</div>
+              <div class="ivp-pipeline-row">
+                <div class="ivp-pipeline-stage ivp-stage-active">
+                  <span class="ivp-stage-label">ליד חדש</span>
+                  <span class="ivp-stage-count">12</span>
+                </div>
+                <div class="ivp-pipeline-arrow" aria-hidden="true">←</div>
+                <div class="ivp-pipeline-stage">
+                  <span class="ivp-stage-label">פגישה נקבעה</span>
+                  <span class="ivp-stage-count">8</span>
+                </div>
+                <div class="ivp-pipeline-arrow" aria-hidden="true">←</div>
+                <div class="ivp-pipeline-stage ivp-stage-accent">
+                  <span class="ivp-stage-label">נסגר</span>
+                  <span class="ivp-stage-count">5</span>
+                </div>
+              </div>
+
+              <!-- Call notes -->
+              <div class="ivp-dash-section-label">Call Notes — היום</div>
+              <div class="ivp-call-notes">
+                <div class="ivp-call-note">
+                  <span class="ivp-call-badge ivp-badge-cyan">הושלם</span>
+                  <span class="ivp-call-text">שיחת מעקב — לקוח Moshe L. — הצעה נשלחה</span>
+                  <span class="ivp-call-time">10:30</span>
+                </div>
+                <div class="ivp-call-note">
+                  <span class="ivp-call-badge ivp-badge-lime">בתהליך</span>
+                  <span class="ivp-call-text">דמו מוצר — Startup TLV — מעוניין</span>
+                  <span class="ivp-call-time">13:00</span>
+                </div>
+                <div class="ivp-call-note">
+                  <span class="ivp-call-badge ivp-badge-muted">מתוכנן</span>
+                  <span class="ivp-call-text">שיחת סגירה — Roni B. — ₪18,000</span>
+                  <span class="ivp-call-time">15:30</span>
+                </div>
+              </div>
+
+              <!-- Conversion uplift chart -->
+              <div class="ivp-dash-section-label">Conversion Uplift</div>
+              <div class="ivp-conversion-row">
+                <div class="ivp-conv-bar-wrap">
+                  <span class="ivp-conv-label">לפני APEX</span>
+                  <div class="ivp-conv-bar-track">
+                    <div class="ivp-conv-bar ivp-bar-before" style="width:28%"></div>
+                  </div>
+                  <span class="ivp-conv-pct">28%</span>
+                </div>
+                <div class="ivp-conv-bar-wrap">
+                  <span class="ivp-conv-label">עם APEX</span>
+                  <div class="ivp-conv-bar-track">
+                    <div class="ivp-conv-bar ivp-bar-after" style="width:67%"></div>
+                  </div>
+                  <span class="ivp-conv-pct ivp-pct-accent">67%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dashboard image overlay -->
+            <div class="ivp-dash-image-wrap">
+              <img loading="lazy" decoding="async" data-placeholder="index-value-proposition-image-1" data-context="A sleek remote sales professional working on a modern laptop with multiple browser tabs showing CRM pipeline data, call logs, and revenue charts. Clean home-office setup with dark ambient lighting and a second monitor displaying colorful sales metrics. Professional, cinematic atmosphere conveying elite remote sales execution for a B2B consulting service." width="600" height="340" src="/assets/site-index-value-proposition-image-1.webp" alt="מנהל מכירות מרחוק של APEX עובד עם לוח מחוונים ונתוני מכירות">
+            </div>
+          </div>
+
+          <!-- Peeking metric tile -->
+          <div class="ivp-metric-tile">
+            <div class="ivp-metric-tile-inner">
+              <span class="ivp-metric-label">הכנסה חודשית ממוצעת</span>
+              <span class="ivp-metric-value">+41%</span>
+              <span class="ivp-metric-sub">לאחר 90 יום עם APEX</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Bottom diagonal divider -->
+  <div class="ivp-divider-wrapper">
+    <svg data-no-icon-edit="true" aria-hidden="true" viewBox="0 0 1200 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,80 L0,60 L1200,10 L1200,80 Z" fill="#111315"></path>
+    </svg>
+  </div>
+</section>
+
+<section data-band-index="3" id="testimonials" class="index-testimonials-section" data-layout-spec="בית-testimonials" dir="rtl">
+  <!-- Background grid pattern -->
+  <div class="its-bg-pattern" aria-hidden="true"></div>
+
+  <!-- Intro block -->
+  <div class="its-container">
+    <div class="its-intro">
+      <span class="its-eyebrow">לקוחות מדברים</span>
+      <h2 class="its-heading">תוצאות אמיתיות,<br><span class="its-heading-accent">מעסקים אמיתיים</span></h2>
+      <p class="its-subheading">בעלי עסקים קטנים ובינוניים שבחרו בליווי מכירות אישי מרחוק — ומספרים על השינוי שחוו.</p>
+    </div>
+
+    <!-- Glowing divider -->
+    <div class="its-divider" aria-hidden="true">
+      <span class="its-divider-line"></span>
+      <span class="its-divider-dot"></span>
+      <span class="its-divider-line"></span>
+    </div>
+
+    <!-- Testimonial cards grid -->
+    <div class="its-cards-grid">
+
+      <!-- Card 1 -->
+      <article class="its-card">
+        <div class="its-quote-mark" aria-hidden="true">“</div>
+        <blockquote class="its-quote-text">
+          לפני APEX, לידים נפלו בין הכיסאות. היום יש לנו מעקב מסודר אחרי כל פנייה, וזמן התגובה שלנו ירד מיממה לפחות משעתיים.
+        </blockquote>
+        <footer class="its-card-footer">
+          <div class="its-client-info">
+            <span class="its-client-name">רועי לוי</span>
+            <span class="its-client-role">מנכ"ל, חברת שירותי IT בינונית</span>
+          </div>
+          <div class="its-outcome-badge">
+            <svg data-element-type="icon" data-icon-type="svg" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M2 10L6 6L9 9L12 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>זמן תגובה ירד ב-80%</span>
+          </div>
+        </footer>
+      </article>
+
+      <!-- Card 2 (middle — taller) -->
+      <article class="its-card its-card--featured">
+        <div class="its-card-glow" aria-hidden="true"></div>
+        <div class="its-quote-mark its-quote-mark--accent" aria-hidden="true">“</div>
+        <blockquote class="its-quote-text">
+          חיפשתי מישהו שיעשה את המכירות בשבילי בלי שאצטרך לגייס עובד. APEX נתן לי בדיוק את זה — ליווי אישי, מקצועי, ומרחוק לגמרי. ההכנסה החודשית שלי עלתה ב-35% תוך שלושה חודשים.
+        </blockquote>
+        <footer class="its-card-footer">
+          <div class="its-client-info">
+            <span class="its-client-name">מיכל שפירא</span>
+            <span class="its-client-role">בעלת עסק, ייעוץ ארגוני לעסקים קטנים</span>
+          </div>
+          <div class="its-outcome-badge its-outcome-badge--accent">
+            <svg data-element-type="icon" data-icon-type="svg" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M2 10L6 6L9 9L12 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>+35% הכנסה תוך 3 חודשים</span>
+          </div>
+        </footer>
+      </article>
+
+      <!-- Card 3 -->
+      <article class="its-card">
+        <div class="its-quote-mark" aria-hidden="true">“</div>
+        <blockquote class="its-quote-text">
+          המכירות שלנו היו לא עקביות — חודש טוב, חודש גרוע. מאז שהתחלנו לעבוד עם APEX יש לנו עקביות ברורה בהכנסות ותהליך מכירה שאפשר לסמוך עליו.
+        </blockquote>
+        <footer class="its-card-footer">
+          <div class="its-client-info">
+            <span class="its-client-name">אורן כהן</span>
+            <span class="its-client-role">שותף מנהל, סוכנות שיווק דיגיטלי</span>
+          </div>
+          <div class="its-outcome-badge">
+            <svg data-element-type="icon" data-icon-type="svg" width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M2 10L6 6L9 9L12 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span>עקביות הכנסות — כל חודש</span>
+          </div>
+        </footer>
+      </article>
+
+    </div>
+    <!-- End cards grid -->
+  </div>
+
+  <!-- Bottom SVG waveform divider -->
+  <div class="its-divider-bottom" aria-hidden="true">
+    <svg data-no-icon-edit="true" aria-hidden="true" viewBox="0 0 1200 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Faint cyan waveform strokes -->
+      <polyline points="0,55 30,48 60,58 90,44 120,52 150,42 180,56 210,46 240,54 270,40 300,50 330,44 360,58 390,46 420,52 450,40 480,56 510,44 540,52 570,42 600,54 630,46 660,56 690,44 720,52 750,40 780,54 810,46 840,56 870,44 900,52 930,42 960,56 990,46 1020,54 1050,44 1080,52 1110,40 1140,54 1170,46 1200,52" fill="none" stroke="rgba(0,212,255,0.18)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      <polyline points="0,65 40,58 80,68 120,54 160,62 200,52 240,66 280,56 320,64 360,50 400,60 440,54 480,68 520,56 560,62 600,50 640,64 680,54 720,62 760,50 800,64 840,56 880,66 920,54 960,62 1000,52 1040,64 1080,56 1120,60 1160,52 1200,62" fill="none" stroke="rgba(0,212,255,0.09)" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      <!-- Fill bottom to next section -->
+      <path d="M0,90 L0,72 Q100,60 200,68 T400,62 Q500,58 600,66 T800,60 Q900,64 1000,58 T1200,64 L1200,90 Z" fill="#0A0E1A"></path>
+    </svg>
+  </div>
+</section>
+
+<section data-band-index="4" id="stats" class="index-stats-section" data-layout-spec="בית-stats" dir="rtl">
+  <div class="index-stats-container">
+
+    <!-- Section Header -->
+    <div class="index-stats-header">
+      <span class="index-stats-eyebrow">תוצאות מדידות</span>
+      <h2 class="index-stats-title">מה שמייחד את APEX —<br><span class="index-stats-title-accent">ביצועים שמדברים בעד עצמם</span></h2>
+      <p class="index-stats-subtitle">שירות מכירות אישי ומרוחק שמביא תוצאות אמיתיות לבעלי עסקים קטנים ובינוניים. ללא צוות פנימי, ללא עלויות מיותרות — רק תוצאות.</p>
+    </div>
+
+    <!-- Metric Grid -->
+    <div class="index-stats-grid">
+
+      <!-- Primary (large) metric tile -->
+      <article class="index-stats-tile index-stats-tile--primary">
+        <div class="index-stats-tile-inner">
+          <div class="index-stats-tile-badge">מדד מוביל</div>
+          <div class="index-stats-metric-number">+3×</div>
+          <h3 class="index-stats-metric-label">שיפור בפעילות מכירתית עקבית</h3>
+          <p class="index-stats-metric-desc">עסקים שעובדים עם APEX מדווחים על פי שלוש יותר פגישות, הצעות מחיר ומעקבים בשבוע הראשון.</p>
+          <div class="index-stats-tile-line"></div>
+          <small class="index-stats-tile-note">ממוצע בקרב לקוחות SMB פעילים</small>
+        </div>
+        <div class="index-stats-tile-glow"></div>
+      </article>
+
+      <!-- Secondary tiles -->
+      <div class="index-stats-secondary-grid">
+
+        <article class="index-stats-tile index-stats-tile--secondary">
+          <div class="index-stats-metric-number index-stats-metric-number--sm">85%</div>
+          <h3 class="index-stats-metric-label">שיפור במשמעת המעקב</h3>
+          <p class="index-stats-metric-desc">ליקוי המעקב אחרי לידים הוא אחד הגורמים הגדולים לאובדן הכנסה — אנחנו פותרים אותו.</p>
+        </article>
+
+        <article class="index-stats-tile index-stats-tile--secondary">
+          <div class="index-stats-metric-number index-stats-metric-number--sm">100%</div>
+          <h3 class="index-stats-metric-label">ניהול אישי ומרחוק</h3>
+          <p class="index-stats-metric-desc">כל לקוח מקבל ליווי ישיר ואישי — ללא מתווכים, ללא צוות אנונימי, ללא פשרות.</p>
+        </article>
+
+        <article class="index-stats-tile index-stats-tile--secondary">
+          <div class="index-stats-metric-number index-stats-metric-number--sm index-stats-metric-number--accent">2–4</div>
+          <h3 class="index-stats-metric-label">שבועות לתוצאות ראשונות</h3>
+          <p class="index-stats-metric-desc">מסגרת זמן ריאלית לשינוי מדיד בפעילות המכירתית — החל מהשבוע הראשון לשיתוף הפעולה.</p>
+        </article>
+
+      </div>
+    </div>
+
+    <!-- Trust Strip -->
+    <div class="index-stats-trust-strip">
+      <div class="index-stats-trust-item">
+        <span class="index-stats-trust-icon"><i class="fa-solid fa-wifi"></i></span>
+        <span class="index-stats-trust-text">מסירה מרחוק בלבד</span>
+      </div>
+      <div class="index-stats-trust-divider"></div>
+      <div class="index-stats-trust-item">
+        <span class="index-stats-trust-icon"><i class="fa-solid fa-user-tie"></i></span>
+        <span class="index-stats-trust-text">טיפול אישי ישיר</span>
+      </div>
+      <div class="index-stats-trust-divider"></div>
+      <div class="index-stats-trust-item">
+        <span class="index-stats-trust-icon"><i class="fa-solid fa-store"></i></span>
+        <span class="index-stats-trust-text">מותאם לעסקים קטנים ובינוניים</span>
+      </div>
+      <div class="index-stats-trust-divider"></div>
+      <div class="index-stats-trust-item">
+        <span class="index-stats-trust-icon"><i class="fa-solid fa-chart-line"></i></span>
+        <span class="index-stats-trust-text">מיינדסט מכירות מדיד</span>
+      </div>
+      <div class="index-stats-trust-divider"></div>
+      <div class="index-stats-trust-item">
+        <span class="index-stats-trust-icon"><i class="fa-solid fa-shield-halved"></i></span>
+        <span class="index-stats-trust-text">ללא צורך בצוות פנימי</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Divider: dark gradient rise with grid dots -->
+  <div class="index-stats-divider-wrapper" aria-hidden="true">
+    <div class="index-stats-dot-grid"></div>
+    <svg data-no-icon-edit="true" aria-hidden="true" viewBox="0 0 1200 100" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="statsRiseGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#111315" stop-opacity="0"></stop>
+          <stop offset="100%" stop-color="#111315" stop-opacity="1"></stop>
+        </linearGradient>
+      </defs>
+      <path d="M0,100 L0,55 Q150,38 300,50 T600,42 Q750,35 900,48 T1200,40 L1200,100 Z" fill="#111315"></path>
+      <rect x="0" y="0" width="1200" height="100" fill="url(#statsRiseGrad)"></rect>
+    </svg>
+  </div>
+
+</section>
+
+<section data-band-index="5" id="process" class="index-process-section" data-layout-spec="בית-process" dir="rtl">
+  <!-- Background decorative graph lines -->
+  <div class="index-process-section__bg-graph" aria-hidden="true">
+    <svg data-no-icon-edit="true" aria-hidden="true" viewBox="0 0 1200 400" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" class="index-process-section__graph-svg">
+      <polyline points="0,320 150,280 300,300 450,220 600,240 750,160 900,180 1050,100 1200,120" fill="none" stroke="rgba(0,212,255,0.06)" stroke-width="2"></polyline>
+      <polyline points="0,360 200,340 400,310 550,290 700,260 850,230 1000,200 1200,170" fill="none" stroke="rgba(182,255,59,0.04)" stroke-width="1.5"></polyline>
+      <line x1="0" y1="200" x2="1200" y2="200" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="8 16"></line>
+      <line x1="0" y1="300" x2="1200" y2="300" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="8 16"></line>
+      <line x1="0" y1="100" x2="1200" y2="100" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="8 16"></line>
+    </svg>
+  </div>
+
+  <!-- Grid texture overlay -->
+  <div class="index-process-section__grid-texture" aria-hidden="true"></div>
+
+  <div class="index-process-section__container">
+
+    <!-- Intro block -->
+    <div class="index-process-section__intro">
+      <div class="index-process-section__intro-label">
+        <span class="index-process-section__label-dot"></span>
+        <small>תהליך העבודה</small>
+      </div>
+      <h2 class="index-process-section__heading">איך זה עובד</h2>
+      <p class="index-process-section__subheading">מתודולוגיה מבוססת תוצאות — מהאבחון הראשון ועד לצמיחה מדידה. כל שלב מחושב, כל פעולה נמדדת.</p>
+    </div>
+
+    <!-- Roadmap -->
+    <div class="index-process-section__roadmap">
+
+      <!-- Connecting line -->
+      <div class="index-process-section__connector-line" aria-hidden="true"></div>
+
+      <!-- Step 1 -->
+      <article class="index-process-section__step">
+        <div class="index-process-section__step-node">
+          <span class="index-process-section__step-node-inner"></span>
+          <span class="index-process-section__step-number">01</span>
+        </div>
+        <div class="index-process-section__step-content">
+          <div class="index-process-section__step-icon" aria-hidden="true">
+            <svg data-element-type="icon" data-icon-type="svg" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="14" cy="14" r="12" stroke="currentColor" stroke-width="1.5"></circle>
+              <path d="M9 14l3 3 7-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+          </div>
+          <h3 class="index-process-section__step-title">אבחון ומיפוי פערים</h3>
+          <p class="index-process-section__step-desc">מפגש עומק ראשוני לזיהוי נקודות החולשה בתהליך המכירה שלך — מאיפה מגיעים לידים, איך הם מנוהלים, ואיפה ההכנסה דולפת.</p>
+          <div class="index-process-section__step-result">
+            <span class="index-process-section__result-dot"></span>
+            <small>תמונת מצב ברורה תוך 48 שעות</small>
+          </div>
+        </div>
+      </article>
+
+      <!-- Step 2 -->
+      <article class="index-process-section__step">
+        <div class="index-process-section__step-node">
+          <span class="index-process-section__step-node-inner"></span>
+          <span class="index-process-section__step-number">02</span>
+        </div>
+        <div class="index-process-section__step-content">
+          <div class="index-process-section__step-icon" aria-hidden="true">
+            <svg data-element-type="icon" data-icon-type="svg" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="6" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.5"></rect>
+              <path d="M4 11h20" stroke="currentColor" stroke-width="1.5"></path>
+              <path d="M9 16h4M9 19h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+            </svg>
+          </div>
+          <h3 class="index-process-section__step-title">בניית מתווה פעולה</h3>
+          <p class="index-process-section__step-desc">בניית מסלול פנייה ומעקב מותאם אישית לעסק שלך — סקריפטים, תזמונים, וכלי CRM פשוטים שמבטיחים שאף ליד לא נופל בין הכיסאות.</p>
+          <div class="index-process-section__step-result">
+            <span class="index-process-section__result-dot"></span>
+            <small>מערך מכירות מוכן להפעלה</small>
+          </div>
+        </div>
+      </article>
+
+      <!-- Step 3 -->
+      <article class="index-process-section__step">
+        <div class="index-process-section__step-node">
+          <span class="index-process-section__step-node-inner"></span>
+          <span class="index-process-section__step-number">03</span>
+        </div>
+        <div class="index-process-section__step-content">
+          <div class="index-process-section__step-icon" aria-hidden="true">
+            <svg data-element-type="icon" data-icon-type="svg" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14 4v20M4 14h20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+              <circle cx="14" cy="14" r="4" stroke="currentColor" stroke-width="1.5"></circle>
+            </svg>
+          </div>
+          <h3 class="index-process-section__step-title">ביצוע מכירות אישי מרחוק</h3>
+          <p class="index-process-section__step-desc">אני מנהל את פעילות המכירה בפועל — שיחות, מיילים, פולואפים — בשמך ובקולך, מרחוק ובצורה שקופה לחלוטין. אתה רואה הכל בזמן אמת.</p>
+          <div class="index-process-section__step-result">
+            <span class="index-process-section__result-dot"></span>
+            <small>פעילות מכירה יומיומית ועקבית</small>
+          </div>
+        </div>
+      </article>
+
+      <!-- Step 4 -->
+      <article class="index-process-section__step index-process-section__step--last">
+        <div class="index-process-section__step-node index-process-section__step-node--complete">
+          <span class="index-process-section__step-node-inner"></span>
+          <span class="index-process-section__step-number">04</span>
+        </div>
+        <div class="index-process-section__step-content">
+          <div class="index-process-section__step-icon" aria-hidden="true">
+            <svg data-element-type="icon" data-icon-type="svg" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="4,20 10,12 15,16 24,6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"></polyline>
+              <circle cx="24" cy="6" r="2.5" fill="currentColor"></circle>
+            </svg>
+          </div>
+          <h3 class="index-process-section__step-title">מדידה ושיפור מתמיד</h3>
+          <p class="index-process-section__step-desc">דוחות ביצועים שבועיים, ניתוח המרות, וכוונון מתמיד של הגישה בהתאם לנתונים. כל החלטה מבוססת על מספרים, לא על תחושות.</p>
+          <div class="index-process-section__step-result index-process-section__step-result--accent">
+            <span class="index-process-section__result-dot index-process-section__result-dot--accent"></span>
+            <small>צמיחה מדידה ומתועדת</small>
+          </div>
+        </div>
+      </article>
+
+    </div>
+    <!-- /roadmap -->
+
+  </div>
+
+  <!-- Bottom torn-panel divider -->
+  <div class="index-process-section__divider-wrapper">
+    <svg data-no-icon-edit="true" aria-hidden="true" viewBox="0 0 1440 72" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Thin off-white highlight line -->
+      <polyline points="0,18 60,22 130,14 210,24 290,12 380,20 460,10 540,22 620,16 700,24 780,10 860,20 940,14 1020,22 1100,12 1180,20 1260,16 1340,22 1440,14" fill="none" stroke="rgba(245,247,250,0.12)" stroke-width="1"></polyline>
+      <!-- Torn fill going to next section (bg-dark) -->
+      <path d="M0,72 L0,22 Q30,18 60,24 T130,16 Q170,20 210,26 T290,14 Q330,20 380,22 T460,12 Q500,18 540,24 T620,18 Q660,22 700,26 T780,12 Q820,18 860,22 T940,16 Q980,20 1020,24 T1100,14 Q1140,18 1180,22 T1260,18 Q1340,22 1380,20 L1440,16 L1440,72 Z" fill="var(--bg-light)"></path>
+    </svg>
+  </div>
+
+</section>
+
+<section data-band-index="6" id="contact" class="index-contact-section" data-layout-spec="בית-contact" dir="rtl">
+  <div class="index-contact-container">
+
+    <!-- Section Header -->
+    <div class="index-contact-header">
+      <h2 class="index-contact-title">מוכנים לצמוח? <span class="index-contact-accent">בואו נדבר</span></h2>
+      <p class="index-contact-subtitle">השאירו פרטים ונחזור אליכם עם תוכנית מותאמת אישית לשיפור המכירות שלכם — מרחוק, בצורה אישית ועם תוצאות מדידות.</p>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="index-contact-grid">
+
+      <!-- Contact Form (START / RIGHT in RTL) -->
+      <div class="index-contact-form-wrapper">
+        <div class="index-contact-form-glow"></div>
+        <form class="contact-form index-contact-form" novalidate="">
+
+          <div class="index-contact-form-row">
+            <div class="index-contact-field">
+              <label class="index-contact-label" for="contact-name">שם מלא</label>
+              <input class="index-contact-input" type="text" id="contact-name" name="name" placeholder="ישראל ישראלי" required="">
+            </div>
+            <div class="index-contact-field">
+              <label class="index-contact-label" for="contact-phone">טלפון</label>
+              <input class="index-contact-input" type="tel" id="contact-phone" name="phone" placeholder="050-0000000" required="">
+            </div>
+          </div>
+
+          <div class="index-contact-field">
+            <label class="index-contact-label" for="contact-email">דואר אלקטרוני</label>
+            <input class="index-contact-input" type="email" id="contact-email" name="email" placeholder="israel@example.com" required="">
+          </div>
+
+          <div class="index-contact-field">
+            <label class="index-contact-label" for="contact-message">ספרו לנו על העסק שלכם</label>
+            <textarea class="index-contact-input index-contact-textarea" id="contact-message" name="message" placeholder="במה תוכל APEX לעזור לכם? מה האתגרים העיקריים במכירות שלכם כיום?" rows="4" required=""></textarea>
+          </div>
+
+          <div class="index-contact-accent-line"></div>
+
+          <div class="privacy-consent">
+            <label class="privacy-consent-label">
+              <input type="checkbox" name="privacy_consent" class="privacy-consent-checkbox" required="">
+              <span>קראתי ואני מסכים/ה ל<a href="/terms" target="_blank">תנאי השימוש</a> ול<a href="/privacy" target="_blank">מדיניות הפרטיות</a></span>
+            </label>
+          </div>
+
+          <button type="submit" class="index-contact-btn">
+            <span>שלחו הודעה — נחזור אליכם תוך 24 שעות</span>
+            <svg data-element-type="icon" data-icon-type="svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          </button>
+
+        </form>
+      </div>
+
+      <!-- Reassurance Panel (END / Left in RTL) -->
+      <aside class="index-contact-reassurance">
+
+        <div class="index-contact-trust-block">
+          <div class="index-contact-trust-icon">
+            <svg data-element-type="icon" data-icon-type="svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          </div>
+          <div class="index-contact-trust-content">
+            <h3 class="index-contact-trust-title">ליווי אישי לחלוטין</h3>
+            <p class="index-contact-trust-text">אתם לא מקבלים תבנית גנרית — אתם מקבלים יועץ מכירות שמכיר את העסק שלכם לעומק ועובד אתכם צמוד.</p>
+          </div>
+        </div>
+
+        <div class="index-contact-trust-block">
+          <div class="index-contact-trust-icon">
+            <svg data-element-type="icon" data-icon-type="svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+          </div>
+          <div class="index-contact-trust-content">
+            <h3 class="index-contact-trust-title">100% מרחוק — ללא פגישות</h3>
+            <p class="index-contact-trust-text">השירות מועבר לחלוטין מרחוק. חסכו זמן, גמישות מלאה — תוצאות אמיתיות בלי לצאת מהמשרד.</p>
+          </div>
+        </div>
+
+        <div class="index-contact-trust-block">
+          <div class="index-contact-trust-icon">
+            <svg data-element-type="icon" data-icon-type="svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline><polyline points="16 7 22 7 22 13"></polyline></svg>
+          </div>
+          <div class="index-contact-trust-content">
+            <h3 class="index-contact-trust-title">מכירות שניתנות למדידה</h3>
+            <p class="index-contact-trust-text">כל פעולה מתועדת ומדידה. אתם רואים בדיוק מה עובד, כמה עסקאות נסגרו ואיפה יש פוטנציאל נוסף.</p>
+          </div>
+        </div>
+
+        <!-- Direct Contact Details -->
+        <div class="index-contact-details">
+          <p class="index-contact-details-label">יצירת קשר ישיר</p>
+          <ul class="index-contact-details-list">
+            
+            
+            
+          </ul>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+</section>
+  </main>
+  
+  <footer class="site-footer" dir="rtl" aria-label="כותרת תחתונה של האתר"> <div class="footer-container"> <div class="footer-top"> <div class="footer-col footer-brand"> <img src="/assets/apex-sales-consulting-logo.webp" alt="APEX" class="logo"> <p class="footer-tagline">אנחנו ב-APEX מתמחים בייעוץ מכירות מתקדם לעסקים קטנים ובינוניים. אנחנו מביאים תמיכת מכירות מרחוק ברמה עילית, תשומת לב אישית ותוצאות מדידות שמניעות צמיחה בהכנסות.</p> <div class="footer-social">    </div> </div> <div class="footer-col footer-links"> <h3 class="footer-heading"><span class="heading-accent"></span>ניווט מהיר</h3> <ul class="footer-nav"> <li><a href="#services">Services</a></li> <li><a href="#value-proposition">Value Proposition</a></li> <li><a href="#testimonials">Testimonials</a></li> <li><a href="#stats">Stats</a></li> <li><a href="#process">Process</a></li> </ul> </div> <div class="footer-col footer-contact-col"> <h3 class="footer-heading"><span class="heading-accent"></span>צור קשר</h3> <ul class="footer-contact"> <li> <span class="contact-icon"><i class="fas fa-envelope"></i></span> <span class="contact-text"><a href="mailto:[business_email]">[business_email]</a></span> </li> <li> <span class="contact-icon"><i class="fas fa-phone"></i></span> <span class="contact-text"><a href="tel:[business_phone]">[business_phone]</a></span> </li> <li><a href="/"><span class="contact-icon"><i class="fas fa-map-marker-alt"></i></span> <span class="contact-text">[business_address]</span></a></li> </ul> </div> <div class="footer-col footer-hours"> <h3 class="footer-heading"><span class="heading-accent"></span>שעות פעילות</h3> <ul class="hours-list"> <li><a href="/"><span class="day">ראשון – חמישי</span><span class="time">09:00 – 18:00</span></a></li> <li><a href="/"><span class="day">שישי</span><span class="time">09:00 – 13:00</span></a></li> <li><a href="/"><span class="day">שבת</span><span class="time closed">סגור</span></a></li> </ul> <div class="support-badge"><i class="fas fa-headset"></i> תמיכה 24/7 זמינה</div> </div> </div> <div class="footer-divider"></div> <div class="footer-bottom"> <div class="footer-copyright">© 2026 APEX. כל הזכויות שמורות.</div> <div class="footer-legal"> <a href="/privacy">מדיניות פרטיות</a> <span class="legal-sep">|</span> <a href="/terms">תנאי שימוש</a> <span class="legal-sep">|</span> <a href="/accessibility">נגישות</a> <span class="legal-sep">|</span> <a href="https://zappy5.com" target="_blank" class="zappy-attribution">נוצר באמצעות Zappy</a> </div> </div> </div> </footer>
+  
+  <a href="https://wa.me/[whatsapp_handle]" class="whatsapp-float" aria-label="WhatsApp">
+    <i class="fab fa-whatsapp"></i>
+  </a>
+  
+  <div data-integration="accessibility:toolbar"></div>
+
+    <script src="/script.js"></script>
+
+    <script id="zappy-mobile-submenu-script">
+    (function() {
+      function initMobileSubmenuToggles() {
+        if (window.innerWidth > 768) {
+          document.querySelectorAll('.mobile-submenu-toggle').forEach(function(btn) { btn.remove(); });
+          document.querySelectorAll('.sub-menu.mobile-expanded').forEach(function(menu) { menu.classList.remove('mobile-expanded'); });
+          return;
+        }
+        var items = document.querySelectorAll('.nav-menu li:has(.sub-menu), nav li:has(.sub-menu), .navbar li:has(.sub-menu), #navMenu li:has(.sub-menu)');
+        items.forEach(function(li) {
+          if (li.querySelector('.mobile-submenu-toggle')) return;
+          var submenu = li.querySelector('.sub-menu');
+          var parentLink = li.querySelector(':scope > a');
+          if (!submenu || !parentLink) return;
+          var toggleBtn = document.createElement('button');
+          toggleBtn.className = 'mobile-submenu-toggle';
+          toggleBtn.setAttribute('aria-label', 'Toggle submenu');
+          toggleBtn.setAttribute('type', 'button');
+          parentLink.insertAdjacentElement('afterend', toggleBtn);
+          toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            document.querySelectorAll('.sub-menu.mobile-expanded').forEach(function(menu) {
+              if (menu !== submenu) { menu.classList.remove('mobile-expanded'); var t = menu.parentElement.querySelector('.mobile-submenu-toggle'); if(t) t.classList.remove('expanded'); }
+            });
+            submenu.classList.toggle('mobile-expanded');
+            toggleBtn.classList.toggle('expanded');
+          });
+        });
+      }
+      if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', initMobileSubmenuToggles); }
+      else { initMobileSubmenuToggles(); }
+      var resizeTimer; window.addEventListener('resize', function() { clearTimeout(resizeTimer); resizeTimer = setTimeout(initMobileSubmenuToggles, 250); });
+      // Re-initialize when mobile menu becomes visible (MutationObserver)
+      var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+          if (mutation.type === 'attributes') {
+            var target = mutation.target;
+            if (target.classList && (target.classList.contains('active') || target.classList.contains('open'))) {
+              setTimeout(initMobileSubmenuToggles, 100);
+            }
+          }
+        });
+      });
+      setTimeout(function() {
+        document.querySelectorAll('.mobile-menu, .nav-menu, #navMenu, nav').forEach(function(menu) {
+          observer.observe(menu, { attributes: true, attributeFilter: ['class', 'style'] });
+        });
+      }, 500);
+    })();
+    </script>
+
+    <script id="zappy-navbar-scroll-effect">
+    (function(){
+      var nb=document.querySelector('nav.navbar,.navbar:not(.zappy-catalog-menu)');
+      var cm=document.querySelector('.zappy-catalog-menu,#zappy-catalog-menu');
+      if(!nb)return;
+      var fb='rgba(245,247,250,0.85)';
+      var th=60;
+      var rs=getComputedStyle(document.documentElement);
+      var td=rs.getPropertyValue('--text-dark').trim()||'#1a1a1a';
+      var tl=rs.getPropertyValue('--text-light').trim()||'#ffffff';
+      var st=true?td:tl;
+      nb.style.transition='background 0.3s ease,backdrop-filter 0.3s ease,-webkit-backdrop-filter 0.3s ease,box-shadow 0.3s ease';
+      if(cm)cm.style.transition='background 0.3s ease,backdrop-filter 0.3s ease,-webkit-backdrop-filter 0.3s ease';
+      var neSel='a,.navbar-brand,.navbar-brand a,.dropdown-toggle,.mobile-toggle,.phone-header-btn,.mobile-hamburger-btn,.mobile-close-btn,.mobile-submenu-toggle,.nav-link';
+      var skipCls=['cart-link','login-link','nav-search-toggle','search-toggle'];
+      function sTC(c,clr){var els=c.querySelectorAll(neSel);for(var i=0;i<els.length;i++){var sk=false;if(els[i].closest('.sub-menu')||els[i].closest('.dropdown-menu')){sk=true;}for(var j=0;j<skipCls.length;j++){if(els[i].classList.contains(skipCls[j])){sk=true;break;}}if(!sk)els[i].style.setProperty('color',clr,'important');}}
+      function cTC(c){var els=c.querySelectorAll(neSel);for(var i=0;i<els.length;i++){if(els[i].closest('.sub-menu')||els[i].closest('.dropdown-menu'))continue;els[i].style.removeProperty('color');}}
+      function applyScrolled(){
+        nb.classList.add('scrolled');
+        if(window.innerWidth>768){
+          nb.style.setProperty('--frosted-text',st);
+          nb.style.setProperty('background-image','none','important');
+          nb.style.setProperty('background-color',fb,'important');
+          nb.style.backdropFilter='blur(12px)';nb.style.webkitBackdropFilter='blur(12px)';nb.style.boxShadow='0 2px 16px rgba(0,0,0,0.12)';
+          sTC(nb,st);
+        }
+        if(cm){cm.classList.add('scrolled');if(window.innerWidth>768){cm.style.setProperty('background',fb,'important');cm.style.setProperty('backdrop-filter','blur(12px)','important');cm.style.setProperty('-webkit-backdrop-filter','blur(12px)','important');sTC(cm,st);}}
+      }
+      function onS(){
+        if(window._zappyNavNoDarkHero) return;
+        if(window.innerWidth<=768){nb.classList.remove('scrolled');cTC(nb);if(cm){cm.classList.remove('scrolled');cTC(cm);}return;}
+        var y=window.scrollY||window.pageYOffset;
+        if(y>th){
+          nb.classList.add('scrolled');nb.style.setProperty('background-color',fb,'important');nb.style.setProperty('background-image','none','important');
+          nb.style.setProperty('--frosted-text',st);nb.style.backdropFilter='blur(12px)';nb.style.webkitBackdropFilter='blur(12px)';nb.style.boxShadow='0 2px 16px rgba(0,0,0,0.12)';
+          sTC(nb,st);
+          if(cm){cm.classList.add('scrolled');cm.style.setProperty('background',fb,'important');cm.style.setProperty('backdrop-filter','blur(12px)','important');cm.style.setProperty('-webkit-backdrop-filter','blur(12px)','important');sTC(cm,st);}
+        }else{
+          nb.classList.remove('scrolled');nb.style.setProperty('background-color','transparent','important');nb.style.removeProperty('background-image');
+          nb.style.removeProperty('--frosted-text');nb.style.backdropFilter='none';nb.style.webkitBackdropFilter='none';nb.style.boxShadow='none';
+          cTC(nb);
+          if(cm){cm.classList.remove('scrolled');cm.style.setProperty('background','transparent','important');cm.style.setProperty('backdrop-filter','none','important');cm.style.setProperty('-webkit-backdrop-filter','none','important');cTC(cm);}
+        }
+      }
+      function sLum(rv,gv,bv){rv/=255;gv/=255;bv/=255;rv=rv<=0.03928?rv/12.92:Math.pow((rv+0.055)/1.055,2.4);gv=gv<=0.03928?gv/12.92:Math.pow((gv+0.055)/1.055,2.4);bv=bv<=0.03928?bv/12.92:Math.pow((bv+0.055)/1.055,2.4);return 0.2126*rv+0.7152*gv+0.0722*bv;}
+      window.addEventListener('scroll',onS,{passive:true});
+      window.addEventListener('resize',onS,{passive:true});
+      onS();
+      var heroEl=document.querySelector('section[class*="hero"],[data-hero-type],main>section:first-child');
+      var hasDH=false;
+      if(heroEl){var hCs=getComputedStyle(heroEl);var hBI=hCs.backgroundImage;if(hBI&&hBI!=='none'){if(hBI.indexOf('url(')!==-1){var hM2=hCs.backgroundColor.match(/\d+/g);if(hM2&&hM2.length>=3){hasDH=sLum(parseInt(hM2[0]),parseInt(hM2[1]),parseInt(hM2[2]))<0.4;}else{hasDH=true;}}else if(hBI.indexOf('gradient')!==-1){var cM=hBI.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/g);if(cM&&cM.length>0){var tLm=0;for(var ci=0;ci<cM.length;ci++){var pts=cM[ci].match(/\d+/g);tLm+=sLum(parseInt(pts[0]),parseInt(pts[1]),parseInt(pts[2]));}hasDH=(tLm/cM.length)<0.4;}else{hasDH=true;}}else{hasDH=true;}}else{var hM=hCs.backgroundColor.match(/\d+/g);if(hM&&hM.length>=3){hasDH=sLum(parseInt(hM[0]),parseInt(hM[1]),parseInt(hM[2]))<0.4;}}}
+      if(!hasDH){window.removeEventListener('scroll',onS);window.removeEventListener('resize',onS);applyScrolled();window._zappyNavNoDarkHero=true;}
+    })();
+    </script>
+</body>
+</html>
