@@ -252,6 +252,350 @@
     <script src="https://cdn.jsdelivr.net/npm/vanilla-cookieconsent@3/dist/cookieconsent.umd.js"></script>
     <!-- Mickidum Accessibility Toolbar -->
     <script src="https://cdn.jsdelivr.net/gh/mickidum/acc_toolbar/acctoolbar/acctoolbar.min.js"></script>
+
+<style data-zappy-section-v2-css="true">
+/* V2 Regenerated Section CSS */
+.index-hero-section {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  background-color: #0A0E1A;
+  color: var(--text-light);
+  overflow: visible;
+  padding-bottom: 80px;
+  direction: rtl;
+}
+
+/* ── Background image ── */
+.index-hero-section .index-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: #0A0E1A;
+  background-size: cover;
+  background-position: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Dot grid motif ── */
+.index-hero-section .index-hero-dotgrid {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(0,200,255,0.05) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: top right;
+}
+
+/* ── Scrim overlay ── */
+.index-hero-section .index-hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    linear-gradient(135deg, rgba(10,14,26,0.92) 0%, rgba(10,14,26,0.75) 55%, rgba(10,14,26,0.55) 100%),
+    linear-gradient(180deg, rgba(10,14,26,0.3) 0%, rgba(10,14,26,0.85) 100%);
+}
+
+/* ── Container ── */
+.index-hero-section .index-hero-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ── Inner content ── */
+.index-hero-section .index-hero-inner {
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 28px;
+  text-align: right;
+}
+
+/* ── Badge ── */
+.index-hero-section .index-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,200,255,0.10);
+  border: 1px solid rgba(0,200,255,0.25);
+  border-radius: 100px;
+  padding: 6px 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #00C8FF;
+  font-family: 'Space Grotesk', 'Inter Tight', sans-serif;
+}
+
+.index-hero-section .index-hero-badge-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #00C8FF;
+  box-shadow: 0 0 8px rgba(0,200,255,0.7);
+  animation: index-hero-pulse 2s ease-in-out infinite;
+}
+
+@keyframes index-hero-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,200,255,0.7); }
+  50% { box-shadow: 0 0 16px rgba(0,200,255,1); }
+}
+
+/* ── H1 ── */
+.index-hero-section .index-hero-h1 {font-family: 'Space Grotesk', 'Inter Tight', sans-serif;
+  font-size: clamp(2.4rem, 5.5vw, 3.75rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--text-light);
+  margin: 0;}
+
+.index-hero-section .index-hero-h1-accent {
+  background: linear-gradient(90deg, #A8FF3B 0%, #00C8FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline;
+}
+
+/* ── Subtitle ── */
+.index-hero-section .index-hero-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: clamp(1rem, 2vw, 1.15rem);
+  font-weight: 400;
+  line-height: 1.75;
+  color: rgba(245,247,250,0.75);
+  margin: 0;
+  max-width: 600px;
+  text-shadow: 0 1px 8px rgba(0,0,0,0.4);
+}
+
+.index-hero-section .index-hero-br {
+  display: block;
+}
+
+/* ── CTAs ── */
+.index-hero-section .index-hero-ctas {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.index-hero-section .index-hero-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #00C8FF;
+  color: #0A0E1A;
+  padding: 15px 30px;
+  border-radius: 8px;
+  font-family: 'Space Grotesk', 'Inter Tight', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  border: none;
+  box-shadow: 0 0 30px rgba(0,200,255,0.3), 0 8px 24px rgba(0,0,0,0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.index-hero-section .index-hero-btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 45px rgba(0,200,255,0.5), 0 12px 32px rgba(0,0,0,0.4);
+  background: #19D4FF;
+}
+
+.index-hero-section .index-hero-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text-light);
+  padding: 14px 24px;
+  border-radius: 8px;
+  border: 1px solid rgba(245,247,250,0.2);
+  font-family: 'Space Grotesk', 'Inter Tight', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.index-hero-section .index-hero-btn-ghost:hover {
+  border-color: rgba(0,200,255,0.5);
+  color: #00C8FF;
+  transform: translateY(-3px);
+  background: rgba(0,200,255,0.06);
+}
+
+/* ── Metrics ── */
+.index-hero-section .index-hero-metrics {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 20px 28px;
+  margin-top: 8px;
+  width: 100%;
+  max-width: 560px;
+  box-sizing: border-box;
+}
+
+.index-hero-section .index-hero-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  text-align: center;
+}
+
+.index-hero-section .index-hero-metric-num {
+  font-family: 'Space Grotesk', 'Inter Tight', sans-serif;
+  font-size: 1.65rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  background: linear-gradient(90deg, #A8FF3B 0%, #00C8FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.index-hero-section .index-hero-metric-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(245,247,250,0.55);
+  white-space: nowrap;
+}
+
+.index-hero-section .index-hero-metric-divider {
+  width: 1px;
+  height: 40px;
+  background: rgba(255,255,255,0.1);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+
+/* ── Bottom divider ── */
+.index-hero-section .index-hero-divider-wrapper {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.index-hero-section .index-hero-divider-wrapper svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ── MOBILE ── */
+@media (max-width: 768px) {
+  .index-hero-section {
+    min-height: 100svh;
+    padding-top: 100px;
+    padding-bottom: 80px;
+    align-items: flex-start;
+  }
+
+  .index-hero-section .index-hero-container {
+    padding: 0 16px;
+  }
+
+  .index-hero-section .index-hero-inner {
+    gap: 20px;
+    max-width: 100%;
+  }
+
+  .index-hero-section .index-hero-h1 {
+    font-size: 2.1rem;
+  }
+
+  .index-hero-section .index-hero-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .index-hero-section .index-hero-br {
+    display: none;
+  }
+
+  .index-hero-section .index-hero-ctas {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .index-hero-section .index-hero-btn-primary,
+  .index-hero-section .index-hero-btn-ghost {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .index-hero-section .index-hero-metrics {
+    padding: 14px 12px;
+    gap: 0;
+    max-width: 100%;
+  }
+
+  .index-hero-section .index-hero-metric-num {
+    font-size: 1.25rem;
+  }
+
+  .index-hero-section .index-hero-metric-label {
+    font-size: 0.62rem;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .index-hero-section .index-hero-dotgrid {
+    width: 100%;
+    opacity: 0.5;
+  }
+}
+/* ZAPPY_POSTGEN_GUARD_HERO_FONT_CAP:index-hero */
+.hero h1, .hero-section h1, [class*="hero-"] h1, [class~="hero"] h1, .hero .hero-title, .hero-title { font-size: 48px !important; line-height: 1.2 !important; }
+@media (max-width: 1024px) {
+  .hero h1, .hero-section h1, [class*="hero-"] h1, [class~="hero"] h1, .hero .hero-title, .hero-title { font-size: 36px !important; }
+}
+@media (max-width: 768px) {
+  .hero h1, .hero-section h1, [class*="hero-"] h1, [class~="hero"] h1, .hero .hero-title, .hero-title { font-size: 28px !important; }
+}
+
+/* ZAPPY_POSTGEN_GUARD_HERO_TYPO:בית-hero (index-hero) — stripped 1 jarring hero headline effect(s) */
+
+</style>
     <link rel="stylesheet" href="/styles.css">
 
     <style id="zappy-dropdown-submenu-styles">
@@ -810,89 +1154,71 @@
 </script>
   
   <main id="main">
-    <section data-band-index="0" id="hero" class="index-hero-section" data-layout-spec="בית-hero" dir="rtl" data-hero-type="fullscreen-scrim">
-  <!-- Background Image -->
-  <div class="index-hero-bg">
-    <img loading="eager" fetchpriority="high" data-hero-bg="true" data-placeholder="index-hero-image-1" data-context="Cinematic dark remote sales command center: a focused business owner in a modern home office on a video call with multiple analytics dashboards glowing on screens, city night skyline visible through a floor-to-ceiling window in the background, electric cyan and lime data visualizations, subtle light reflections on glass surfaces, high-stakes professional atmosphere, photorealistic brand film still aesthetic, deep dark tones with electric blue and green accent lighting" width="1440" height="900" src="/assets/site-index-hero-image-1.webp" alt="סביבת מכירה מרחוק מקצועית - בעל עסק על שיחת וידאו עם מסכי אנליטיקה" data-hero-background="true" data-element-type="image" data-element-id="img-1779104756044-n0dd8avls">
-  </div>
+    <section class="index-hero-section" data-layout-spec="בית-hero" dir="rtl" data-hero-type="fullscreen-scrim" data-zappy-section="true" id="hero">
+  <!-- Background -->
+  <div class="index-hero-bg" style="background-image: url('assets/site-index-hero-image-1.webp'); background-size: cover; background-position: center;"></div>
 
-  <!-- Scrim Overlay -->
+  <!-- Dot grid motif -->
+  <div class="index-hero-dotgrid" aria-hidden="true"></div>
+
+  <!-- Scrim overlay -->
   <div class="index-hero-scrim" aria-hidden="true"></div>
 
-  <!-- Grid Pattern Overlay -->
-  <div class="index-hero-grid-pattern" aria-hidden="true"></div>
-
-  <!-- KPI Chips (decorative, CSS only) -->
-  <div class="index-hero-kpi-chips" aria-hidden="true">
-    <div class="index-hero-kpi-chip">
-      <span class="index-hero-kpi-value">+340%</span>
-      <span class="index-hero-kpi-label">גידול בהכנסות</span>
-    </div>
-    <div class="index-hero-kpi-chip">
-      <span class="index-hero-kpi-value">100%</span>
-      <span class="index-hero-kpi-label">עבודה מרחוק</span>
-    </div>
-    <div class="index-hero-kpi-chip">
-      <span class="index-hero-kpi-value">SMB</span>
-      <span class="index-hero-kpi-label">מותאם לעסקים קטנים</span>
-    </div>
-  </div>
-
-  <!-- Hero Content -->
+  <!-- Content -->
   <div class="index-hero-container">
-    <div class="index-hero-overlay-group">
+    <div class="index-hero-inner">
 
-      <div class="index-hero-eyebrow">
-        <span class="index-hero-eyebrow-dot" aria-hidden="true"></span>
-        <span style="">שירות מכירה אישי •&nbsp;</span>
+      <!-- Label badge -->
+      <div class="index-hero-badge">
+        <span class="index-hero-badge-dot"></span>
+        <span>שירות מכירה אישי •</span>
       </div>
 
-      <h1 class="index-hero-h1" style="">&nbsp; "שירות מכירות מרחוק - שלם רק על מה שצורך"&nbsp; &nbsp;&nbsp;</h1>
+      <!-- Headline -->
+      <h1 class="index-hero-h1">שירות מכירות מרחוק<br><span class="index-hero-h1-accent">שלם רק על מה שצורך</span></h1>
 
-      <h3 class="index-hero-subtitle" style="">
-        תמיכת מכירה צמודה ומותאמת אישית, ללא צורך בצוות מכירות פנימי.
-        אנחנו מנהלים את תהליך המכירה עבורך — בזמן שאתה מתמקד בעסק.
-      </h3>
+      <!-- Subtitle -->
+      <h3 class="index-hero-subtitle">תמיכת מכירה צמודה ומותאמת אישית, ללא צורך בצוות מכירות פנימי.<br class="index-hero-br"> אנחנו מנהלים את תהליך המכירה עבורך — בזמן שאתה מתמקד בעסק.</h3>
 
-      <div class="index-hero-micro-line">
-        <span class="index-hero-micro-item">
-          <i class="fa-solid fa-chart-line" aria-hidden="true" data-element-type="icon" data-element-id="icon-1779104756043-y6j9e9j31" data-icon-type="fontawesome"></i>
-          צמיחה מדידה בהכנסות
-        </span>
-        <span class="index-hero-micro-sep" aria-hidden="true"></span>
-        <span class="index-hero-micro-item">
-          <i class="fa-solid fa-user-tie" aria-hidden="true"></i>
-          תשומת לב אישית
-        </span>
-        <span class="index-hero-micro-sep" aria-hidden="true"></span>
-        <span class="index-hero-micro-item">
-          <i class="fa-solid fa-wifi" aria-hidden="true" data-element-type="icon" data-element-id="icon-1779104756043-nnqwud1oh" data-icon-type="fontawesome"></i>
-          ביצוע מרחוק מלא
-        </span>
-      </div>
-
+      <!-- CTAs -->
       <div class="index-hero-ctas">
-        <a href="#contact" class="index-hero-btn-primary" data-element-type="button" data-element-id="btn-1779104756040-gp21p8pqh" data-native-element="true">
-          <span>בואו נדבר מכירות</span>
+        <a href="#contact" class="index-hero-btn-primary">
+          <i class="fa-solid fa-comments" aria-hidden="true"></i>
+          בואו נדבר מכירות
+        </a>
+        <a href="#how-it-works" class="index-hero-btn-ghost">
+          איך זה עובד
           <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
         </a>
-        <a href="#how-it-works" class="index-hero-btn-secondary" data-element-type="button" data-element-id="btn-1779104756040-xrgeirbue" data-native-element="true">
-          <span>איך זה עובד</span>
-          <i class="fa-solid fa-play" aria-hidden="true"></i>
-        </a>
+      </div>
+
+      <!-- Metrics row -->
+      <div class="index-hero-metrics">
+        <div class="index-hero-metric">
+          <span class="index-hero-metric-num">+340%</span>
+          <span class="index-hero-metric-label">גידול בהכנסות</span>
+        </div>
+        <div class="index-hero-metric-divider" aria-hidden="true"></div>
+        <div class="index-hero-metric">
+          <span class="index-hero-metric-num">100%</span>
+          <span class="index-hero-metric-label">עבודה מרחוק</span>
+        </div>
+        <div class="index-hero-metric-divider" aria-hidden="true"></div>
+        <div class="index-hero-metric">
+          <span class="index-hero-metric-num">SMB</span>
+          <span class="index-hero-metric-label">מותאם לעסקים קטנים</span>
+        </div>
       </div>
 
     </div>
   </div>
 
-  <!-- Cyan Edge Line + Bottom Divider -->
+  <!-- Bottom divider -->
   <div class="index-hero-divider-wrapper">
-    <div class="index-hero-cyan-line" aria-hidden="true"></div>
-    <svg data-no-icon-edit="true" aria-hidden="true" viewBox="0 0 1440 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" class="index-hero-divider-svg">
-      <path d="M0,80 L0,32 L1440,0 L1440,80 Z" fill="#0A0E1A"></path>
+    <svg data-no-icon-edit="true" aria-hidden="true" viewBox="0 0 1440 80" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0,80 L0,45 Q120,28 240,42 T480,35 Q600,28 720,40 T960,33 Q1080,26 1200,38 T1440,32 L1440,80 Z" fill="#0A0E1A"></path>
     </svg>
   </div>
-
 </section>
 
 <section data-band-index="1" id="services" class="index-services-section" data-layout-spec="בית-services" dir="rtl">
